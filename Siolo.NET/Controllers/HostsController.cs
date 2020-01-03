@@ -56,7 +56,7 @@ namespace Siolo.NET.Controllers
 		}
 
 		[Route("api/link")] [HttpPost]
-		public async Task<IActionResult> LinkSubnets([FromBody] LinkContract contract)
+		public async Task<IActionResult> LinkSubnets([FromBody] RelationContract contract)
 		{
 			try
 			{
@@ -95,6 +95,32 @@ namespace Siolo.NET.Controllers
 				}
 
 				return BadRequest(_response.SetStatus(false, "NOK. Restricted file extension"));
+			}
+			catch (Exception e)
+			{
+				return BadRequest(_response.SetStatus(false, $"NOK. {e.Message}"));
+			}
+		}
+
+		[Route("api/findpath")] [HttpPost]
+		public async Task<IActionResult> FindPaths([FromBody] RelationContract relation)
+		{
+			try
+			{
+				return Ok(await _manager.Neo4J.FindAllPaths(relation.First, relation.Second));
+			}
+			catch (Exception e)
+			{
+				return BadRequest(_response.SetStatus(false, $"NOK. {e.Message}"));
+			}
+		}
+
+		[Route("api/getall")] [HttpGet]
+		public async Task<IActionResult> GetAll()
+		{
+			try
+			{
+				return Ok(await _manager.Neo4J.GetAllHosts());
 			}
 			catch (Exception e)
 			{

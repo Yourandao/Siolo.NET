@@ -33,13 +33,5 @@ namespace Siolo.NET.Controllers
 
 			return Ok();
 		}
-
-
-		[Route("api/n4test")]
-		[HttpGet]
-		public async Task<IActionResult> N4Test()
-		{
-			return Ok(await _manager.Neo4J.FindAllPaths("192.168.16.3/24", "192.168.2.4/24"));
-		}
 	}
 }

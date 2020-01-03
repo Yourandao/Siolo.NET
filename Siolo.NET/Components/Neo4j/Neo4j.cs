@@ -1,6 +1,7 @@
 ﻿using Neo4j.Driver;
 using Siolo.NET.Components.Network;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
@@ -30,7 +31,7 @@ namespace Siolo.NET.Components.Neo4j
 			}
 		}
 
-		private async Task<List<IRelationship>> ExecuteWithResult<T>(string query, string field = "name")
+		private async Task<T> ExecuteWithResult<T>(string query, string field)
 		{
 			var session = _driver.AsyncSession();
 
@@ -38,7 +39,27 @@ namespace Siolo.NET.Components.Neo4j
 			{
 				IResultCursor cursor = await session.RunAsync(query);
 
-				return new List<IRelationship>();
+				var result = await cursor.SingleAsync(record => record[field].As<T>());
+
+				return result;
+			}
+			finally
+			{
+				await session.CloseAsync();
+			}
+		}
+
+		private async Task<List<T>> ExecuteWithMultipleResult<T>(string query, string field)
+		{
+			var session = _driver.AsyncSession();
+
+			try
+			{
+				IResultCursor cursor = await session.RunAsync(query);
+
+				var result = await cursor.ToListAsync(record => record[field].As<T>());
+
+				return result;
 			}
 			finally
 			{
@@ -89,8 +110,13 @@ namespace Siolo.NET.Components.Neo4j
 		}
 
 		/*
-		 * MATCH (a:Host{ip:'192.168.16.3/24'})-[r*5..6]->(t:Host{ip:'192.168.2.4/24'}) 
-		   return r
+		 * MATCH path=(a:Host{ip:'192.168.6.2/32'})-[:KNOWS*1..6]->(t:Host{ip:'192.168.5.3/32'}) 
+		   unwind relationships(path) as rel
+		   return collect({from: rel.from, to: rel.to})
+
+		   match (a:Host{ip:'192.168.6.2/32'})-[r:KNOWS*5..6]->(t:Host{ip:'192.168.5.3/32'})
+		   unwind r as rel
+		   return collect(distinct r)
 		 */
 
 		public async Task CreateRelation(Neo4jHostObject host1, Neo4jHostObject host2)
@@ -104,19 +130,40 @@ namespace Siolo.NET.Components.Neo4j
 			}
 		}
 
-		public async Task<List<IRelationship>> FindAllPaths(string first, string second)
+		public async Task<List<List<Neo4jRelation>>> FindAllPaths(string first, string second)
 		{
-			var query = $"MATCH (a:Host{{ip: '{first}'}})-[r*5..6]->(t:Host{{ip : '{second}'}}) return r";
-			var result = await ExecuteWithResult<IRelationship>(query, "r");
+			var query =
+				$"match path = (a:Host {{ip : '{first}'}})-[:KNOWS*1..6]->(t:Host {{ip : '{second}'}}) unwind relationships(path) as rel return collect({{from : rel.from, to : rel.to }}) as PathData";
+
+			var result = await ExecuteWithResult<List<Dictionary<string, object>>>(query, "PathData");
+
+			var paths = new List<List<Neo4jRelation>>();
+			var path = new List<Neo4jRelation>();
+
+			bool isFirst = true;
+
+			foreach (var way in result.Select(elem => elem.Select(o => o.Value.ToString()).ToList()))
+			{
+				if (way[0] == first && !isFirst)
+				{
+					paths.Add(path);
+					path.Clear();
+				}
+
+				isFirst = false;
+
+				path.Add(new Neo4jRelation(way[0], way[1]));
+			}
+
+			return paths;
+		}
+
+		public async Task<List<string>> GetAllHosts()
+		{
+			var query = "match (n:Host) return n.ip as ip";
+			var result = await ExecuteWithMultipleResult<string>(query, "ip");
 
 			return result;
 		}
-
-		//public async Task<List<string>> GetAllHosts()
-		//{
-		//	var query = "match (n:Host) return n";
-
-		//	return await ExecuteWithResult<string>(query);
-		//}
 	}
 }

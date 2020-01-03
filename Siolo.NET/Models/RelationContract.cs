@@ -1,6 +1,6 @@
 ﻿namespace Siolo.NET.Models
 {
-	public class LinkContract
+	public class RelationContract
 	{
 		public string First { get; set; }
 		
