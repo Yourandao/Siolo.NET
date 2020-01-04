@@ -1,5 +1,8 @@
-﻿using System.Threading.Tasks;
+﻿using System.IO;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
 using Siolo.NET.Components;
 using Siolo.NET.Components.Network;
 
@@ -32,6 +35,18 @@ namespace Siolo.NET.Controllers
 			_manager.Elastic.CreateTempIndex();
 
 			return Ok();
+		}
+
+		[Route("api/vttest/")]
+		[HttpPost]
+		public async Task<string> VtTest([FromForm] IFormFile file)
+		{
+			using (var ms = new MemoryStream())
+			{
+				file.OpenReadStream().CopyTo(ms);
+				await _manager.Mongo.UploadFile(file.FileName, file.OpenReadStream());
+				return JsonConvert.SerializeObject(await _manager.VirusTotal.GetShortReportFromFileBytesAsync(ms.ToArray()), Formatting.Indented);
+			}
 		}
 	}
 }

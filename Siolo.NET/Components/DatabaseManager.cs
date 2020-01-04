@@ -6,7 +6,7 @@ namespace Siolo.NET.Components
 {
 	public class DatabaseManager
 	{
-		private const string Host = "localhost";
+		private const string Host = "104.248.28.149";
 
 		public Mongo Mongo { get; }
 
@@ -18,13 +18,16 @@ namespace Siolo.NET.Components
 
 		public Elastic Elastic { get; }
 
+		public VT.VirusTotal VirusTotal { get; }
+
 		public DatabaseManager()
 		{
-			Mongo = new Mongo(Host, "27017", "storage");
+			Mongo = new Mongo(Host, "27017", "vt_reports");
 			Redis = new Redis(Host, "6379");
 			Neo4J = new Neo4J(Host, "7687", "neo4j", "test");
 			Postgres = new Postgres(Host, "5432");
 			//Elastic = new Elastic();
+			VirusTotal = new VT.VirusTotal(@"Resources\.virustotal.api", @"Resources\sigs.json", Mongo);
 		}
 	}
 }

@@ -12,29 +12,41 @@ namespace Siolo.NET.Components
 		private readonly MongoClient _client;
 
 		private readonly IMongoDatabase _db;
-		private readonly IMongoCollection<BsonDocument> _collection;
+		private readonly IMongoCollection<BsonDocument> _report_collection;
 
 		private readonly IGridFSBucket _gridfs;
 
-		public Mongo(string host, string port, string collection)
+		public Mongo(string host, string port, string report_collection)
 		{
-			string connection = $"mongodb://{host}:{port}";
+			string connection = $"mongodb://root:example@{host}:{port}";
 
 			_client = new MongoClient(connection);
 
 			_db = _client.GetDatabase("storage");
-			_collection = _db.GetCollection<BsonDocument>(collection);
+			_report_collection = _db.GetCollection<BsonDocument>(report_collection);
 
 			_gridfs = new GridFSBucket(_db);
 		}
 
-		public async Task Insert<T1, T2>(Dictionary<T1, T2> data)
+		public async Task InsertReport(string hash, string data)
 		{
-			var bson = data.ToBsonDocument();
+			var bson = (new Dictionary<string, string>() {  { "hash" , hash },
+																			{ "data" , data }
+																		}).ToBsonDocument();
 
-			await _collection.InsertOneAsync(bson);
+			await _report_collection.InsertOneAsync(bson);
 		}
-			
+
+		public async Task<string> GetReport(string hash)
+		{
+			var result = await _report_collection.FindAsync(new BsonDocument("hash", hash));
+
+			var single_or_default = result.SingleOrDefault();
+			var data = single_or_default is null ? null : single_or_default["data"];
+
+			return data is null ? "" : data.ToString();
+		}
+
 		public async Task<string> UploadFile(string filePath)
 		{
 			await using (var fs = new FileStream(filePath, FileMode.Open))
