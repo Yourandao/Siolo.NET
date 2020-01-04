@@ -39,8 +39,6 @@ namespace Siolo.NET.Components.Network
 
 		public static async Task<bool> IsRestricted(IAsyncEnumerable<string> extensions, string fullClass)
 		{
-			//troj:exe
-			//
 			var fullClassParts = fullClass.Split(':');
 
 			await foreach (var extension in extensions)

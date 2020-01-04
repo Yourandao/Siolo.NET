@@ -88,7 +88,7 @@ namespace Siolo.NET.Components.Neo4j
 			await Execute(query);
 		}
 
-		public async Task PushHostRaw(string ip)
+		public async Task<string> PushHostRaw(string ip)
 		{
 			bool isSubnet = NetworkUtility.IsSubnet(ip);
 
@@ -102,10 +102,14 @@ namespace Siolo.NET.Components.Neo4j
 
 				await CreateRelation(new Neo4jHostObject(subnetIp, true),
 											new Neo4jHostObject(ip, false));
+
+				return subnetIp;
 			}
 			else
 			{
 				await Execute(query);
+
+				return default;
 			}
 		}
 

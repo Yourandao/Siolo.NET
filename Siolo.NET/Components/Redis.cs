@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using StackExchange.Redis;
 
@@ -9,12 +10,14 @@ namespace Siolo.NET.Components
 		private readonly ConnectionMultiplexer _connection;
 
 		private readonly IDatabase _db;
+		private readonly IServer _server;
 
 		public Redis(string host, string port)
 		{
 			_connection = ConnectionMultiplexer.Connect($"{host}:{port}");
 
 			_db = _connection.GetDatabase();
+			_server = _connection.GetServer($"{host}:{port}");
 		}
 
 		public async Task Flush()
@@ -45,7 +48,9 @@ namespace Siolo.NET.Components
 
 		public async IAsyncEnumerable<string> GetHostWildcarts(string host)
 		{
-			foreach (var value in await _db.SetMembersAsync(host))
+			string key = _server.Keys(pattern: $"{host}*").First();
+
+			foreach (var value in await _db.SetMembersAsync(key))
 			{
 				if (value != default)
 				{

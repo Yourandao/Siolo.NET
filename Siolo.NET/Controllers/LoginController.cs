@@ -18,6 +18,8 @@ namespace Siolo.NET.Controllers
 		{
 			_manager = manager;
 			_response = new Response();
+
+			_manager.UpdateRedisStorage().GetAwaiter();
 		}
 
 		[Route("api/login")] [HttpPost]
@@ -25,14 +27,10 @@ namespace Siolo.NET.Controllers
 		{
 			try
 			{
-				await _manager.Neo4J.PushHostRaw(contract.Ip);
-
-				if (!await _manager.Postgres.InsertNewOne(contract.Ip))
+				if (!await _manager.PushNewHost(contract.Ip))
 				{
-					return Unauthorized(_response.SetStatus(false, "NOK. Failed to push into postgres"));
+					return Unauthorized(_response.SetStatus(false, "Log In Error"));
 				}
-
-				await _manager.Redis.PushHostData(await _manager.Postgres.GetEntities());
 
 				return Ok(_response.SetStatus(true, "OK"));
 			}
