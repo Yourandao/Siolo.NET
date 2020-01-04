@@ -1,9 +1,9 @@
-﻿using System.Collections.Generic;
-using System.IO;
-using System.Threading.Tasks;
-using MongoDB.Bson;
+﻿using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoDB.Driver.GridFS;
+using System.Collections.Generic;
+using System.IO;
+using System.Threading.Tasks;
 
 namespace Siolo.NET.Components
 {
@@ -12,37 +12,53 @@ namespace Siolo.NET.Components
 		private readonly MongoClient _client;
 
 		private readonly IMongoDatabase _db;
-		private readonly IMongoCollection<BsonDocument> _report_collection;
+
+		private readonly IMongoCollection<BsonDocument> _reportCollection;
+		private readonly IMongoCollection<BsonDocument> _shortReportCollection;
 
 		private readonly IGridFSBucket _gridfs;
 
-		public Mongo(string host, string port, string report_collection)
+		public Mongo(string host, string port, string reportCollection, string shortReportCollection)
 		{
 			string connection = $"mongodb://root:example@{host}:{port}";
 
 			_client = new MongoClient(connection);
 
 			_db = _client.GetDatabase("storage");
-			_report_collection = _db.GetCollection<BsonDocument>(report_collection);
+
+			_reportCollection = _db.GetCollection<BsonDocument>(reportCollection);
+			_shortReportCollection = _db.GetCollection<BsonDocument>(shortReportCollection);
 
 			_gridfs = new GridFSBucket(_db);
 		}
 
 		public async Task InsertReport(string hash, string data)
 		{
-			var bson = (new Dictionary<string, string>() {  { "hash" , hash },
-																			{ "data" , data }
-																		}).ToBsonDocument();
+			var bson = new Dictionary<string, string>() {
+				{ "hash" , hash },
+				{ "data" , data }
+			}.ToBsonDocument();
 
-			await _report_collection.InsertOneAsync(bson);
+			await _reportCollection.InsertOneAsync(bson);
+		}
+
+		public async Task InsertShortReport(string hash, string data)
+		{
+			var bson = new Dictionary<string, string>()
+			{
+				{ "hash", hash },
+				{ "data", data }
+			}.ToBsonDocument();
+
+			await _shortReportCollection.InsertOneAsync(bson);
 		}
 
 		public async Task<string> GetReport(string hash)
 		{
-			var result = await _report_collection.FindAsync(new BsonDocument("hash", hash));
+			var result = await _reportCollection.FindAsync(new BsonDocument("hash", hash));
 
-			var single_or_default = result.SingleOrDefault();
-			var data = single_or_default is null ? null : single_or_default["data"];
+			var singleOrDefault = result.SingleOrDefault();
+			var data = singleOrDefault?["data"];
 
 			return data is null ? "" : data.ToString();
 		}

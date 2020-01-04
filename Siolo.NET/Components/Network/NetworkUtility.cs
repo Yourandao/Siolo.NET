@@ -37,14 +37,18 @@ namespace Siolo.NET.Components.Network
 			return response;
 		}
 
-		public static async Task<bool> IsAllowed(IAsyncEnumerable<string> extensions, string fileName)
+		public static async Task<bool> IsRestricted(IAsyncEnumerable<string> extensions, string fullClass)
 		{
+			//troj:exe
+			//
+			var fullClassParts = fullClass.Split(':');
+
 			await foreach (var extension in extensions)
 			{
 				var extensionParts = extension.Split(':');
-				var fileExtension = fileName.Split('.').Last().ToLower();
 
-				if (extensionParts[1] == fileExtension && extensionParts[0] == "clean")
+				if ((extensionParts[0] == fullClassParts[0] || extensionParts[0] == "*") &&
+				    (extensionParts[1] == fullClassParts[1] || extensionParts[1] == "*"))
 				{
 					return true;
 				}
