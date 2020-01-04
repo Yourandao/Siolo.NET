@@ -10,8 +10,10 @@ using Newtonsoft.Json;
 
 namespace Siolo.NET.Components.VT
 {
-   class VirusTotal
+   public class VirusTotal
    {
+      private Mongo Mongo;
+
       private readonly string sApiBase = "https://www.virustotal.com/api/v3/";
       private readonly bool bPublicApi = true;
       private readonly int iPublicSleep = 10;
@@ -20,10 +22,11 @@ namespace Siolo.NET.Components.VT
 
       private static DateTime dtLastPublicCall = new DateTime(0);
 
-      public VirusTotal(string api_keys_file, string sigs_file)
+      public VirusTotal(string api_keys_file, string sigs_file, Mongo mongo)
       {
          sApiKeysFile = api_keys_file;
          sSigsFile = sigs_file;
+         Mongo = mongo;
       }
 
       public static string GetMd5FromBytes(byte[] file_bytes)
@@ -88,11 +91,19 @@ namespace Siolo.NET.Components.VT
       {
          try
          {
-            // TODO: if hash not in mongo:
+            string result = await Mongo.GetReport(file_hash);
+            if(result != "")
+            {
+               return result;
+            }
+
             string url = $"{sApiBase}files/{file_hash}";
             HttpClient client = GetHttpClient();
 
-            return await client.GetStringAsync(url);
+            result = await client.GetStringAsync(url);
+            await Mongo.InsertReport(file_hash, result);
+
+            return result;
          }
          catch (Exception exc)
          {
@@ -182,6 +193,16 @@ namespace Siolo.NET.Components.VT
       public async Task<string> GetFullFileClassAsync(string file_path)
       {
          return await GetFullFileClassFromBytesAsync(File.ReadAllBytes(file_path));
+      }
+
+      public async Task<VTShortReport> GetShortReportFromFileBytesAsync(byte[] file_bytes)
+      {
+         return new VTShortReport
+         {
+            md5 = VirusTotal.GetMd5FromBytes(file_bytes),
+            file_size = file_bytes.Length,
+            full_class = await GetFullFileClassFromBytesAsync(file_bytes)
+         };
       }
    }
 }
