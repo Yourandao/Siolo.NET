@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Siolo.NET.Components;
 using Siolo.NET.Components.Network;
+using Siolo.NET.Components.Logstash;
 
 namespace Siolo.NET.Controllers
 {
@@ -47,6 +48,15 @@ namespace Siolo.NET.Controllers
 				await _manager.Mongo.UploadFile(file.FileName, file.OpenReadStream());
 				return JsonConvert.SerializeObject(await _manager.VirusTotal.GetShortReportFromFileBytesAsync(ms.ToArray()), Formatting.Indented);
 			}
+		}
+
+		[Route("api/logstash_test/")]
+		[HttpGet]
+		public async Task<string> Logstash_test()
+		{
+			await _manager.Logstash.SendEventAsync(new EventDrop("123.123.123.123/12", "this_is_md5", "ANOTHER:CLASS"));
+
+			return "OK";
 		}
 	}
 }
