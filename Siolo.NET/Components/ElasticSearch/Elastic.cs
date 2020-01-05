@@ -21,18 +21,19 @@ namespace Siolo.NET.Components.ElasticSearch
 
 		public async Task<string> FindIp(string hash)
 		{
-			var searchResponse = await _client.SearchAsync<HitClass>(s =>
+			var searchResponse = await _client.SearchAsync<LogEvent>(s =>
 				s.Index("logstash_generic-*")
-				 .Query(q =>
-					q.Bool(b =>
-						b.Must(
-							m => m.Match(match => match.Field(obj => obj.md5).Query(hash)), 
-							m => m.Match(match => match.Field(obj => obj.event_type).Query("drop"))
+				 .Sort(sort => sort.Ascending(obj => obj.Timestamp))
+				 .Query(query =>
+					 query.Bool(@bool =>
+						 @bool.Must(
+							 must => must.Term(c => c.Field(f => f.Md5).Value(hash)),
+							 must => must.Term(c => c.Field(f => f.EventType).Value("drop"))
 						)
 					)
 				));
 
-			return searchResponse.Documents.First().src_ip;
+			return searchResponse.Documents.First().Ip;
 		}
 
 		public void CreateTempIndex()
