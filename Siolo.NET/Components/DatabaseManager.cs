@@ -20,6 +20,8 @@ namespace Siolo.NET.Components
 
 		public VT.VirusTotal VirusTotal { get; }
 
+		public Logstash.Logstash Logstash { get; }
+
 		public DatabaseManager()
 		{
 			Mongo = new Mongo(Host, "27017", "vt_reports", "short_vt_reports");
@@ -28,6 +30,7 @@ namespace Siolo.NET.Components
 			Postgres = new Postgres(Host, "5432");
 			Elastic = new Elastic();
 			VirusTotal = new VT.VirusTotal(@"Resources\.virustotal.api", @"Resources\sigs.json", Mongo);
+			Logstash = new Logstash.Logstash(Host, 5044);
 		}
 
 		public async Task UpdateRedisStorage()
