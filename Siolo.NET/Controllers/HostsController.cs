@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Siolo.NET.Components;
+using Siolo.NET.Components.Logstash;
 using Siolo.NET.Components.Neo4j;
 using Siolo.NET.Components.Network;
 using Siolo.NET.Models;
@@ -77,23 +78,21 @@ namespace Siolo.NET.Controllers
 		{
 			try
 			{
-				using (var ms = new MemoryStream())
+				using (var memoryStream = new MemoryStream())
 				{
-					file.OpenReadStream().CopyTo(ms);
+					file.OpenReadStream().CopyTo(memoryStream);
 
 					var policies = _manager.Redis.GetHostWildcarts(host);
-					var fullClass = await _manager.VirusTotal.GetFullFileClassFromBytesAsync(ms.ToArray());
+					var fullClass = await _manager.VirusTotal.GetFullFileClassFromBytesAsync(memoryStream.ToArray());
+					var shortReport = await _manager.VirusTotal.GetShortReportFromFileBytesAsync(memoryStream.ToArray());
 
 					if (file != null && await NetworkUtility.IsRestricted(policies, fullClass.ToLower()))
 					{
-						var shortReport = await _manager.VirusTotal.GetShortReportFromFileBytesAsync(ms.ToArray());
-
-						await _manager.Mongo.UploadFile(file.FileName, file.OpenReadStream());
-
-						await _manager.Mongo.InsertShortReport(shortReport.md5,
-							JsonConvert.SerializeObject(shortReport, Formatting.Indented));
-
-						// insert into elastic all possible paths
+						await _manager.RegisterIncident(file, host, fullClass, shortReport);
+					}
+					else
+					{
+						await _manager.Logstash.SendEventAsync(new EventDrop(host, shortReport.md5, fullClass));
 					}
 
 					return Ok(_response.SetStatus(true, "OK"));

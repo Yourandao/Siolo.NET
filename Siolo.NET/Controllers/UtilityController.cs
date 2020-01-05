@@ -58,5 +58,12 @@ namespace Siolo.NET.Controllers
 
 			return "OK";
 		}
+
+		[Route("api/el_test/")]
+		[HttpGet]
+		public async Task<string> El_test()
+		{
+			return await _manager.Elastic.FindIp("3af1008ba9f6dddaf99907d9458ee775");
+		}
 	}
 }

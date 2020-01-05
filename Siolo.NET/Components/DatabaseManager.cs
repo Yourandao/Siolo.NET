@@ -1,6 +1,14 @@
 ﻿using System.Threading.Tasks;
+
+using Microsoft.AspNetCore.Http;
+
+using Newtonsoft.Json;
+
+using Siolo.NET.Components.ElasticSearch;
+using Siolo.NET.Components.Logstash;
 using Siolo.NET.Components.Neo4j;
 using Siolo.NET.Components.Postgre;
+using Siolo.NET.Components.VT;
 
 namespace Siolo.NET.Components
 {
@@ -18,7 +26,7 @@ namespace Siolo.NET.Components
 
 		public Elastic Elastic { get; }
 
-		public VT.VirusTotal VirusTotal { get; }
+		public VirusTotal VirusTotal { get; }
 
 		public Logstash.Logstash Logstash { get; }
 
@@ -28,8 +36,8 @@ namespace Siolo.NET.Components
 			Redis = new Redis(Host, "6379");
 			Neo4J = new Neo4J(Host, "7687", "neo4j", "test");
 			Postgres = new Postgres(Host, "5432");
-			Elastic = new Elastic();
-			VirusTotal = new VT.VirusTotal(@"Resources\.virustotal.api", @"Resources\sigs.json", Mongo);
+			Elastic = new Elastic(Host, "9200");
+			VirusTotal = new VirusTotal(@"Resources\.virustotal.api", @"Resources\sigs.json", Mongo);
 			Logstash = new Logstash.Logstash(Host, 5044);
 		}
 
@@ -60,6 +68,34 @@ namespace Siolo.NET.Components
 			await UpdateRedisStorage();
 
 			return true;
+		}
+
+		public async Task RegisterIncident(IFormFile file, string host, string fullClass, VTShortReport shortReport)
+		{
+			await RegisterIncidentAtMongoAsync(file, shortReport);
+			await RegisterIncidentAtElasticAsync(host, fullClass, shortReport);
+		}
+
+		private async Task RegisterIncidentAtMongoAsync(IFormFile file, VTShortReport shortReport)
+		{
+			await Mongo.UploadFile(file.FileName, file.OpenReadStream());
+
+			await Mongo.InsertShortReport(shortReport.md5,
+				JsonConvert.SerializeObject(shortReport, Formatting.Indented));
+		}
+
+		private async Task RegisterIncidentAtElasticAsync(string host, string fullClass, VTShortReport shortReport)
+		{
+			await Logstash.SendEventAsync(new EventDrop(host, shortReport.md5, fullClass));
+
+			var incident = new EventIncident(host, shortReport.md5, fullClass);
+			var possibleDestinationIp = await Elastic.FindIp(shortReport.md5);
+
+			var paths = await Neo4J.FindAllPaths(host, possibleDestinationIp);
+
+			incident.SetPossibleRoutes(JsonConvert.SerializeObject(paths));
+
+			await Logstash.SendEventAsync(incident);
 		}
 	}
 }
