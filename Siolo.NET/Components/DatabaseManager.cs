@@ -89,7 +89,7 @@ namespace Siolo.NET.Components
 			await Logstash.SendEventAsync(new EventDrop(host, shortReport.md5, fullClass));
 
 			var incident = new EventIncident(host, shortReport.md5, fullClass);
-			var possibleDestinationIp = await Elastic.FindIp(shortReport.md5);
+			var possibleDestinationIp = await Elastic.FindFirstIncidentByFileHash(shortReport.md5);
 
 			var paths = await Neo4J.FindAllPaths(host, possibleDestinationIp);
 

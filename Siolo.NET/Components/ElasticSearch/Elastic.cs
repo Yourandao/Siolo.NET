@@ -1,5 +1,6 @@
 ﻿using Nest;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
 using System.Text;
@@ -19,10 +20,10 @@ namespace Siolo.NET.Components.ElasticSearch
 			_client = new ElasticClient(settings);
 		}
 
-		public async Task<string> FindIp(string hash)
+		public async Task<string> FindFirstIncidentByFileHash(string hash)
 		{
-			var searchResponse = await _client.SearchAsync<LogEvent>(s =>
-				s.Index("logstash_generic-*")
+			var searchResponse = await _client.SearchAsync<LogEvent>(search =>
+				search.Index("logstash_generic-*")
 				 .Sort(sort => sort.Ascending(obj => obj.Timestamp))
 				 .Query(query =>
 					 query.Bool(@bool =>
@@ -34,6 +35,19 @@ namespace Siolo.NET.Components.ElasticSearch
 				));
 
 			return searchResponse.Documents.First().Ip;
+		}
+
+		public async Task<IEnumerable<LogEvent>> FindAllIncidents()
+		{
+			var searchResponse = await _client.SearchAsync<LogEvent>(search =>
+				search.Index("logstash_generic-*")
+					  .Sort(sort => sort.Descending(obj => obj.Timestamp))
+					  .Query(query => 
+						  query.Match(match => 
+							  match.Field(obj => obj.EventType).Query("incident")))
+			);
+
+			return searchResponse.Documents;
 		}
 
 		public void CreateTempIndex()

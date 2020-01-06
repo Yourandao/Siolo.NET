@@ -1,4 +1,6 @@
-﻿using Nest;
+﻿using System.Collections.Generic;
+
+using Nest;
 
 namespace Siolo.NET.Components.ElasticSearch
 {
@@ -27,5 +29,8 @@ namespace Siolo.NET.Components.ElasticSearch
 
 		[Text(Name = "full_class")]
 		public string FullClass { get; set; }
+
+		[Object(Name = "PossibleRoutes")]
+		public List<List<string>> PossibleRoutes { get; set; }
 	}
 }
