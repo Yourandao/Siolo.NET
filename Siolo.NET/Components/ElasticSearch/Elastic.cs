@@ -37,7 +37,7 @@ namespace Siolo.NET.Components.ElasticSearch
 			return searchResponse.Documents.First().Ip;
 		}
 
-		public async Task<IEnumerable<LogEvent>> FindAllIncidents()
+		public async Task<IEnumerable<object>> FindAllIncidents()
 		{
 			var searchResponse = await _client.SearchAsync<LogEvent>(search =>
 				search.Index("logstash_generic-*")
@@ -47,7 +47,14 @@ namespace Siolo.NET.Components.ElasticSearch
 							  match.Field(obj => obj.EventType).Query("incident")))
 			);
 
-			return searchResponse.Documents;
+			var incidents = new List<object>();
+
+			foreach (var hit in searchResponse.HitsMetadata.Hits)
+			{
+				incidents.Add(new { Id = hit.Id, Data = hit.Source });
+			}
+
+			return incidents;
 		}
 
 		public void CreateTempIndex()

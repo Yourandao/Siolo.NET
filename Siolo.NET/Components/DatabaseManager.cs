@@ -91,7 +91,7 @@ namespace Siolo.NET.Components
 			var incident = new EventIncident(host, shortReport.md5, fullClass);
 			var possibleDestinationIp = await Elastic.FindFirstIncidentByFileHash(shortReport.md5);
 
-			var paths = await Neo4J.FindAllPaths(host, possibleDestinationIp);
+			var paths = await Neo4J.FindAllPaths(possibleDestinationIp, host);
 
 			incident.SetPossibleRoutes(JsonConvert.SerializeObject(paths));
 

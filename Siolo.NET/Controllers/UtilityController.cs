@@ -30,7 +30,7 @@ namespace Siolo.NET.Controllers
 			return Ok(_response.SetStatus(true, "OK"));
 		}
 
-		[Route("api/eltest")] [HttpGet]
+		[Route("test/eltest")] [HttpGet]
 		public IActionResult ElkTest()
 		{
 			_manager.Elastic.CreateTempIndex();
@@ -38,7 +38,7 @@ namespace Siolo.NET.Controllers
 			return Ok();
 		}
 
-		[Route("api/vttest/")]
+		[Route("test/vttest/")]
 		[HttpPost]
 		public async Task<string> VtTest([FromForm] IFormFile file)
 		{
@@ -50,7 +50,7 @@ namespace Siolo.NET.Controllers
 			}
 		}
 
-		[Route("api/logstash_test/")]
+		[Route("test/logstash_test/")]
 		[HttpGet]
 		public async Task<string> Logstash_test()
 		{
@@ -59,7 +59,7 @@ namespace Siolo.NET.Controllers
 			return "OK";
 		}
 
-		[Route("api/el_test/")]
+		[Route("test/el_test/")]
 		[HttpGet]
 		public async Task<IActionResult> El_test()
 		{
