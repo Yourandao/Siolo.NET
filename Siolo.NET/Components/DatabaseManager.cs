@@ -1,4 +1,5 @@
 ﻿using System.Threading.Tasks;
+using System.Linq;
 
 using Microsoft.AspNetCore.Http;
 
@@ -9,6 +10,7 @@ using Siolo.NET.Components.Logstash;
 using Siolo.NET.Components.Neo4j;
 using Siolo.NET.Components.Postgre;
 using Siolo.NET.Components.VT;
+using Siolo.NET.Components.Network;
 
 namespace Siolo.NET.Components
 {
@@ -70,10 +72,10 @@ namespace Siolo.NET.Components
 			return true;
 		}
 
-		public async Task RegisterIncident(IFormFile file, string host, string fullClass, VTShortReport shortReport)
+		public async Task RegisterIncident(IFormFile file, string host, VTShortReport shortReport)
 		{
 			await RegisterIncidentAtMongoAsync(file, shortReport);
-			await RegisterIncidentAtElasticAsync(host, fullClass, shortReport);
+			await RegisterIncidentAtElasticAsync(host, shortReport);
 		}
 
 		private async Task RegisterIncidentAtMongoAsync(IFormFile file, VTShortReport shortReport)
@@ -84,18 +86,25 @@ namespace Siolo.NET.Components
 				JsonConvert.SerializeObject(shortReport, Formatting.Indented));
 		}
 
-		private async Task RegisterIncidentAtElasticAsync(string host, string fullClass, VTShortReport shortReport)
+		private async Task RegisterIncidentAtElasticAsync(string host, VTShortReport shortReport)
 		{
-			await Logstash.SendEventAsync(new EventDrop(host, shortReport.md5, fullClass));
-
-			var incident = new EventIncident(host, shortReport.md5, fullClass);
+			var incident = new EventIncident(host, shortReport.md5, shortReport.full_class);
 			var possibleDestinationIp = await Elastic.FindFirstIncidentByFileHash(shortReport.md5);
 
 			var paths = await Neo4J.FindAllPaths(possibleDestinationIp, host);
 
 			incident.SetPossibleRoutes(JsonConvert.SerializeObject(paths));
+			ExcludeRestrictedRoutes(incident, shortReport);
 
 			await Logstash.SendEventAsync(incident);
+		}
+
+		private void ExcludeRestrictedRoutes(EventIncident e, VTShortReport shortReport)
+		{
+			e.PossibleRoutes = (from route in e.PossibleRoutes
+									  where route.All(host =>
+											!NetworkUtility.IsRestricted(Redis.GetHostWildcarts(host), shortReport.full_class.ToLower()).Result)
+									  select route).ToArray();
 		}
 	}
 }

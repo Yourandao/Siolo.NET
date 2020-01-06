@@ -83,16 +83,13 @@ namespace Siolo.NET.Controllers
 					file.OpenReadStream().CopyTo(memoryStream);
 
 					var policies = _manager.Redis.GetHostWildcarts(host);
-					var fullClass = await _manager.VirusTotal.GetFullFileClassFromBytesAsync(memoryStream.ToArray());
 					var shortReport = await _manager.VirusTotal.GetShortReportFromFileBytesAsync(memoryStream.ToArray());
 
-					if (file != null && await NetworkUtility.IsRestricted(policies, fullClass.ToLower()))
+					await _manager.Logstash.SendEventAsync(new EventDrop(host, shortReport.md5, shortReport.full_class));
+
+					if (file != null && await NetworkUtility.IsRestricted(policies, shortReport.full_class.ToLower()))
 					{
-						await _manager.RegisterIncident(file, host, fullClass, shortReport);
-					}
-					else
-					{
-						await _manager.Logstash.SendEventAsync(new EventDrop(host, shortReport.md5, fullClass));
+						await _manager.RegisterIncident(file, host, shortReport);
 					}
 
 					return Ok(_response.SetStatus(true, "OK"));
