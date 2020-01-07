@@ -2,6 +2,6 @@
 {
 	public class IpContract
 	{
-		public string Ip { get; set; }
+		public string ip { get; set; }
 	}
 }

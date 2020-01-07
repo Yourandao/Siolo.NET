@@ -90,6 +90,7 @@ namespace Siolo.NET.Controllers
 					if (file != null && await NetworkUtility.IsRestricted(policies, shortReport.full_class.ToLower()))
 					{
 						await _manager.RegisterIncident(file, host, shortReport);
+						return Ok(_response.SetStatus(true, "OK. Incident registered"));
 					}
 
 					return Ok(_response.SetStatus(true, "OK"));
@@ -114,7 +115,7 @@ namespace Siolo.NET.Controllers
 			}
 		}
 
-		[Route("api/getall")] [HttpGet]
+		[Route("api/getall")] [HttpPost]
 		public async Task<IActionResult> GetAll()
 		{
 			try

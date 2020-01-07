@@ -22,7 +22,7 @@ namespace Siolo.NET.Controllers
 			_response = new Response();
 		}
 
-		[Route("api/flush")] [HttpGet]
+		[Route("api/flush")] [HttpPost]
 		public async Task<IActionResult> FlushAll()
 		{
 			await _manager.Redis.Flush();
@@ -51,7 +51,7 @@ namespace Siolo.NET.Controllers
 		}
 
 		[Route("test/logstash_test/")]
-		[HttpGet]
+		[HttpPost]
 		public async Task<string> Logstash_test()
 		{
 			await _manager.Logstash.SendEventAsync(new EventDrop("123.123.123.123/12", "this_is_md5", "ANOTHER:CLASS"));
@@ -60,7 +60,7 @@ namespace Siolo.NET.Controllers
 		}
 
 		[Route("test/el_test/")]
-		[HttpGet]
+		[HttpPost]
 		public async Task<IActionResult> El_test()
 		{
 			//return await _manager.Elastic.FindFirstIncidentByFileHash("3af1008ba9f6dddaf99907d9458ee775");

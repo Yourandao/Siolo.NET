@@ -27,7 +27,7 @@ namespace Siolo.NET.Controllers
 		{
 			try
 			{
-				if (!await _manager.PushNewHost(contract.Ip))
+				if (!await _manager.PushNewHost(contract.ip))
 				{
 					return Unauthorized(_response.SetStatus(false, "Log In Error"));
 				}
@@ -45,7 +45,7 @@ namespace Siolo.NET.Controllers
 		{
 			try
 			{
-				await _manager.Neo4J.DeleteHost(contract.Ip);
+				await _manager.Neo4J.DeleteHost(contract.ip);
 
 				return Ok(_response.SetStatus(true, "Ok"));
 			}
