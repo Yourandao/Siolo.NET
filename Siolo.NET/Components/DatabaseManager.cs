@@ -89,9 +89,9 @@ namespace Siolo.NET.Components
 		private async Task RegisterIncidentAtElasticAsync(string host, VTShortReport shortReport)
 		{
 			var incident = new EventIncident(host, shortReport.md5, shortReport.full_class);
-			var possibleDestinationIp = await Elastic.FindFirstIncidentByFileHash(shortReport.md5);
+			var firstOccurrenceIp = await Elastic.FindFirstOccurrenceIpByFileHash(shortReport.md5);
 
-			var paths = await Neo4J.FindAllPaths(possibleDestinationIp, host);
+			var paths = await Neo4J.FindAllPaths(firstOccurrenceIp, host);
 
 			incident.SetPossibleRoutes(JsonConvert.SerializeObject(paths));
 			ExcludeRestrictedRoutes(incident, shortReport);

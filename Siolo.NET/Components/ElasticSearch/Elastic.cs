@@ -18,7 +18,7 @@ namespace Siolo.NET.Components.ElasticSearch
 			_client = new ElasticClient(settings);
 		}
 
-		public async Task<string> FindFirstIncidentByFileHash(string hash)
+		public async Task<string> FindFirstOccurrenceIpByFileHash(string hash)
 		{
 			var searchResponse = await _client.SearchAsync<LogEvent>(search =>
 				search.Index("logstash_generic-*")

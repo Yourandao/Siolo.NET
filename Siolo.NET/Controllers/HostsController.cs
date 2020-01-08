@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
 using Siolo.NET.Components;
 using Siolo.NET.Components.Logstash;
 using Siolo.NET.Components.Neo4j;
@@ -101,7 +102,7 @@ namespace Siolo.NET.Controllers
 			}
 		}
 
-		[Route("api/findpath")] [HttpPost]
+		[Route("api/find_paths")] [HttpPost]
 		public async Task<IActionResult> FindPaths([FromBody] RelationContract relation)
 		{
 			try
@@ -114,12 +115,25 @@ namespace Siolo.NET.Controllers
 			}
 		}
 
-		[Route("api/getall")] [HttpPost]
-		public async Task<IActionResult> GetAll()
+		[Route("api/get_active_hosts")] [HttpPost]
+		public async Task<IActionResult> GetActiveHosts()
 		{
 			try
 			{
-				return Ok(await _manager.Neo4J.GetAllHosts());
+				return Ok(_response.SetStatus(true, JsonConvert.SerializeObject(await _manager.Neo4J.GetAllHosts())));
+			}
+			catch (Exception e)
+			{
+				return BadRequest(_response.SetStatus(false, $"NOK. {e.Message}"));
+			}
+		}
+
+		[Route("api/find_incs")] [HttpPost]
+		public async Task<IActionResult> FindAllIncidents()
+		{
+			try
+			{
+				return Ok(_response.SetStatus(true, JsonConvert.SerializeObject(await _manager.Elastic.FindAllIncidents())));
 			}
 			catch (Exception e)
 			{

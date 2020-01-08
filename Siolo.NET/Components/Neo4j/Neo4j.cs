@@ -166,7 +166,7 @@ namespace Siolo.NET.Components.Neo4j
 
 		public async Task<List<string>> GetAllHosts()
 		{
-			var query = "match (n:Host) return n.ip as ip";
+			var query = "match (n:Host) where n.subnet = 'False' return n.ip as ip";
 			var result = await ExecuteWithMultipleResult<string>(query, "ip");
 
 			return result;
