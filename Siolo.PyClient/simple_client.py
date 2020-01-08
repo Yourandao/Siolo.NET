@@ -2,9 +2,10 @@ import requests
 import base64
 import json
 from os import path
+from brs_exc import BadResponseStateException
 
 SERVICE_IP = 'localhost'
-SERVICE_PORT = 51343
+SERVICE_PORT = 52925
 
 current_session = ''
 opened_sessions = []
@@ -15,7 +16,13 @@ def sendToService(data: dict, cmd_addr: str, files: dict = None):
         r = requests.post(url, json=data)
     else:
         r = requests.post(url, data=data, files=files)
-    return json.loads(r.text)['message']
+
+    parsed_obj = json.loads(r.text)
+
+    if parsed_obj['status'] == False:
+        raise BadResponseStateException(parsed_obj['message'])
+
+    return parsed_obj['message']
 
 
 
@@ -34,12 +41,13 @@ def printHello():
 def cmdHelp():
     print('Available commands:')
     print('help                 -   print help information')
-    print('show <what>          -   show smth (sessions)')
+    print('show <what>          -   show smth (sessions, incs, active_hosts)')
     print('forceuse <ip>        -   use not opened session in current client')
     print('use <ip>             -   use opened session in current client')
     print('login <ip>           -   login ip to system and open session (it will register ip for first time)')
     print('forcelogout <ip>     -   force logut ip from system')
     print('logout <ip/all/cur>  -   logut ip from system')
+    print('report <what> <args> -   print details about smth (inc)')
     print()
     print('In session commands:')
     print('background           -   background current session')
@@ -53,6 +61,21 @@ def cmdShow(what: str):
     if what == 'sessions':
         for i, s in zip(range(len(opened_sessions)), opened_sessions):
             print(f'{i}: {s}')
+        return
+
+    if what == 'incs':
+        hits = json.loads(sendToService({}, 'api/find_incs'))
+
+        for i, data in [(x['Id'], x['Data']) for x in hits]:
+            print(f"{i} {data['LogDate']} {data['LogTime']}\t| File hash: {data['Md5']} | IP: {data['Ip']}")
+
+        return
+
+    if what == 'active_hosts':
+        hosts = json.loads(sendToService({}, 'api/get_active_hosts'))
+        for i, s in zip(range(len(hosts)), hosts):
+            print(f'{i}: {s}')
+
         return
 
     print(f'Can\'t show "{what}"')
