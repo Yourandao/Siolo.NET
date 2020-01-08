@@ -1,11 +1,13 @@
-﻿using Npgsql;
+﻿using System;
+
+using Npgsql;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Siolo.NET.Components.Network;
 
 namespace Siolo.NET.Components.Postgre
 {
-	public class Postgres
+	public class Postgres : IDisposable
 	{
 		private volatile NpgsqlConnection _connection;
 
@@ -98,6 +100,11 @@ namespace Siolo.NET.Components.Postgre
 			await reader.CloseAsync();
 
 			return result.ToString() == UuidNil;
+		}
+
+		public void Dispose()
+		{
+			_connection.Close();
 		}
 	}
 }

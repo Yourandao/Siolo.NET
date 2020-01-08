@@ -20,16 +20,16 @@ namespace Siolo.NET.Components.Logstash
         {
             try
             {
-                TcpClient client = new TcpClient(_ip, _port);
+	            using (var client = new TcpClient(_ip, _port))
+                {
+		            string message = JsonConvert.SerializeObject(e);
+	                var data = System.Text.Encoding.ASCII.GetBytes(message);
 
-                string message = JsonConvert.SerializeObject(e);
-                Byte[] data = System.Text.Encoding.ASCII.GetBytes(message);
+	                NetworkStream stream = client.GetStream();
+	                await stream.WriteAsync(data, 0, data.Length);
 
-                NetworkStream stream = client.GetStream();
-                await stream.WriteAsync(data, 0, data.Length);
-
-                stream.Close();
-                client.Close();
+	                stream.Close();
+	            }
             }
             catch (Exception exc)
             {

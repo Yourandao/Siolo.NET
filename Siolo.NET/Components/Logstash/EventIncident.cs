@@ -13,8 +13,8 @@ namespace Siolo.NET.Components.Logstash
             event_type = "incident";
         }
 
-        public EventIncident(string ip, string md5, string full_class) :
-           base(ip, md5, full_class)
+        public EventIncident(string ip, string md5, string fullClass) :
+           base(ip, md5, fullClass)
         {
             event_type = "incident";
         }

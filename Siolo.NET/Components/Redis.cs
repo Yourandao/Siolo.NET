@@ -1,11 +1,13 @@
-﻿using StackExchange.Redis;
+﻿using System;
+
+using StackExchange.Redis;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
 namespace Siolo.NET.Components
 {
-	public class Redis
+	public class Redis : IDisposable
 	{
 		private readonly ConnectionMultiplexer _connection;
 
@@ -59,9 +61,9 @@ namespace Siolo.NET.Components
 			}
 		}
 
-		public async Task Close()
+		public void Dispose()
 		{
-			await _connection.CloseAsync();
+			_connection.Close();
 		}
 	}
 }

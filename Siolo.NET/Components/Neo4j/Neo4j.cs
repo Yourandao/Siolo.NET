@@ -1,4 +1,6 @@
-﻿using Neo4j.Driver;
+﻿using System;
+
+using Neo4j.Driver;
 using Siolo.NET.Components.Network;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Siolo.NET.Components.Neo4j
 {
-	public class Neo4J
+	public class Neo4J : IDisposable
 	{
 		private readonly IDriver _driver;
 
@@ -168,6 +170,11 @@ namespace Siolo.NET.Components.Neo4j
 			var result = await ExecuteWithMultipleResult<string>(query, "ip");
 
 			return result;
+		}
+
+		public void Dispose()
+		{
+			_driver.CloseAsync().GetAwaiter().GetResult();
 		}
 	}
 }

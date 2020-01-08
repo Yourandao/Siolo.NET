@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
@@ -46,7 +44,7 @@ namespace Siolo.NET.Components.Network
 				var extensionParts = extension.Split(':');
 
 				if ((extensionParts[0] == fullClassParts[0] || extensionParts[0] == "*") &&
-				    (extensionParts[1] == fullClassParts[1] || extensionParts[1] == "*"))
+					(extensionParts[1] == fullClassParts[1] || extensionParts[1] == "*"))
 				{
 					return true;
 				}

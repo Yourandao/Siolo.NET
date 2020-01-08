@@ -30,16 +30,7 @@ namespace Siolo.NET.Controllers
 			return Ok(_response.SetStatus(true, "OK"));
 		}
 
-		[Route("test/eltest")] [HttpGet]
-		public IActionResult ElkTest()
-		{
-			_manager.Elastic.CreateTempIndex();
-
-			return Ok();
-		}
-
-		[Route("test/vttest/")]
-		[HttpPost]
+		[Route("test/vttest/")] [HttpPost]
 		public async Task<string> VtTest([FromForm] IFormFile file)
 		{
 			using (var ms = new MemoryStream())
@@ -50,8 +41,7 @@ namespace Siolo.NET.Controllers
 			}
 		}
 
-		[Route("test/logstash_test/")]
-		[HttpPost]
+		[Route("test/logstash_test/")] [HttpPost]
 		public async Task<string> Logstash_test()
 		{
 			await _manager.Logstash.SendEventAsync(new EventDrop("123.123.123.123/12", "this_is_md5", "ANOTHER:CLASS"));
@@ -59,8 +49,7 @@ namespace Siolo.NET.Controllers
 			return "OK";
 		}
 
-		[Route("test/el_test/")]
-		[HttpPost]
+		[Route("test/el_test/")] [HttpPost]
 		public async Task<IActionResult> El_test()
 		{
 			//return await _manager.Elastic.FindFirstIncidentByFileHash("3af1008ba9f6dddaf99907d9458ee775");

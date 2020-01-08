@@ -2,8 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Sockets;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Siolo.NET.Components.ElasticSearch
@@ -24,15 +22,15 @@ namespace Siolo.NET.Components.ElasticSearch
 		{
 			var searchResponse = await _client.SearchAsync<LogEvent>(search =>
 				search.Index("logstash_generic-*")
-				 .Sort(sort => sort.Ascending(obj => obj.Timestamp))
-				 .Query(query =>
-					 query.Bool(@bool =>
-						 @bool.Must(
-							 must => must.Term(c => c.Field(f => f.Md5).Value(hash)),
-							 must => must.Term(c => c.Field(f => f.EventType).Value("drop"))
+					.Sort(sort => sort.Ascending(obj => obj.Timestamp))
+					.Query(query =>
+						query.Bool(@bool =>
+							@bool.Must(
+								must => must.Term(c => c.Field(f => f.Md5).Value(hash)),
+								must => must.Term(c => c.Field(f => f.EventType).Value("drop"))
+							)
 						)
-					)
-				));
+					));
 
 			return searchResponse.Documents.First().Ip;
 		}
@@ -41,10 +39,10 @@ namespace Siolo.NET.Components.ElasticSearch
 		{
 			var searchResponse = await _client.SearchAsync<LogEvent>(search =>
 				search.Index("logstash_generic-*")
-					  .Sort(sort => sort.Descending(obj => obj.Timestamp))
-					  .Query(query => 
-						  query.Match(match => 
-							  match.Field(obj => obj.EventType).Query("incident")))
+					.Sort(sort => sort.Descending(obj => obj.Timestamp))
+					.Query(query =>
+						query.Match(match =>
+							match.Field(obj => obj.EventType).Query("incident")))
 			);
 
 			var incidents = new List<object>();
@@ -55,20 +53,6 @@ namespace Siolo.NET.Components.ElasticSearch
 			}
 
 			return incidents;
-		}
-
-		public void CreateTempIndex()
-		{
-			TcpClient tcp = new TcpClient("127.0.0.1", 5044);
-			string data = "{\"data\":\"hui\"}";
-
-			var bytes = Encoding.ASCII.GetBytes(data);
-			using var stream = tcp.GetStream();
-
-			stream.Write(bytes);
-			stream.Close();
-
-			tcp.Close();
 		}
 	}
 }

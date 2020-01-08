@@ -1,14 +1,13 @@
-﻿using System;
-using System.IO;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json;
 using Siolo.NET.Components;
 using Siolo.NET.Components.Logstash;
 using Siolo.NET.Components.Neo4j;
 using Siolo.NET.Components.Network;
 using Siolo.NET.Models;
+using System;
+using System.IO;
+using System.Threading.Tasks;
 // ReSharper disable All
 
 namespace Siolo.NET.Controllers
@@ -31,9 +30,9 @@ namespace Siolo.NET.Controllers
 		{
 			try
 			{
-				await _manager.Postgres.RegisterPolicy(contract.Info, contract.Wildcart);
+				bool registerResult = await _manager.Postgres.RegisterPolicy(contract.Info, contract.Wildcart);
 
-				return Ok(_response.SetStatus(true, "OK"));
+				return Ok(_response.SetStatus(true, $"OK. {(!registerResult ? "Already exists" : "Successfully registered")}"));
 			}
 			catch (Exception e)
 			{
@@ -62,7 +61,7 @@ namespace Siolo.NET.Controllers
 		{
 			try
 			{
-				await _manager.Neo4J.CreateRelation(new Neo4jHostObject(contract.First, true), 
+				await _manager.Neo4J.CreateRelation(new Neo4jHostObject(contract.First, true),
 														new Neo4jHostObject(contract.Second, true));
 
 				return Ok(_response.SetStatus(true, "OK"));
