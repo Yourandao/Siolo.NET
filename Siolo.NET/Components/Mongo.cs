@@ -53,9 +53,11 @@ namespace Siolo.NET.Components
 			await _shortReportCollection.InsertOneAsync(bson);
 		}
 
-		public async Task<string> GetReport(string hash)
+		public async Task<string> GetReport(string hash, bool isShort = false)
 		{
-			var result = await _reportCollection.FindAsync(new BsonDocument("hash", hash));
+			var result = !isShort
+				         ? await _reportCollection.FindAsync(new BsonDocument("hash", hash))
+				         : await _shortReportCollection.FindAsync(new BsonDocument("hash", hash));
 
 			var singleOrDefault = result.SingleOrDefault();
 			var data = singleOrDefault?["data"];
