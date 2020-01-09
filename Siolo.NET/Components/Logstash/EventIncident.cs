@@ -5,6 +5,7 @@ namespace Siolo.NET.Components.Logstash
 {
     public class EventIncident : EventDrop
     {
+        public string RestrictingPolicy { get; set; }
         public string[][] PossibleRoutes { get; set; }
 
         public EventIncident() :
@@ -13,9 +14,10 @@ namespace Siolo.NET.Components.Logstash
             event_type = "incident";
         }
 
-        public EventIncident(string ip, string md5, string fullClass) :
+        public EventIncident(string ip, string md5, string fullClass, string restrictingPolicy) :
            base(ip, md5, fullClass)
         {
+            RestrictingPolicy = restrictingPolicy;
             event_type = "incident";
         }
 

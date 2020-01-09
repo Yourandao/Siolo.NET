@@ -22,27 +22,27 @@ namespace Siolo.NET.Components.ElasticSearch
 		{
 			var searchResponse = await _client.SearchAsync<LogEvent>(search =>
 				search.Index("logstash_generic-*")
-					.Sort(sort => sort.Ascending(obj => obj.Timestamp))
+					.Sort(sort => sort.Ascending(obj => obj.timestamp))
 					.Query(query =>
 						query.Bool(@bool =>
 							@bool.Must(
-								must => must.Term(c => c.Field(f => f.Md5).Value(hash)),
-								must => must.Term(c => c.Field(f => f.EventType).Value("drop"))
+								must => must.Term(c => c.Field(f => f.md5).Value(hash)),
+								must => must.Term(c => c.Field(f => f.event_type).Value("drop"))
 							)
 						)
 					));
 
-			return searchResponse.Documents.First().Ip;
+			return searchResponse.Documents.First().ip;
 		}
 
 		public async Task<IEnumerable<object>> FindAllIncidents()
 		{
 			var searchResponse = await _client.SearchAsync<LogEvent>(search =>
 				search.Index("logstash_generic-*")
-					.Sort(sort => sort.Descending(obj => obj.Timestamp))
+					.Sort(sort => sort.Descending(obj => obj.timestamp))
 					.Query(query =>
 						query.Match(match =>
-							match.Field(obj => obj.EventType).Query("incident")))
+							match.Field(obj => obj.event_type).Query("incident")))
 			);
 
 			var incidents = new List<object>();
@@ -53,6 +53,12 @@ namespace Siolo.NET.Components.ElasticSearch
 			}
 
 			return incidents;
+		}
+
+		public async Task<IEnumerable<LogEvent>> FindIncident(string id)
+		{
+			var searchResponse = await _client.SearchAsync<LogEvent>(new SearchRequest() { Query = new RawQuery($"{{\"term\": {{\"_id\": {{\"value\": \"{id}\"}}}}}}") });
+			return (from src in searchResponse.Hits select src.Source).ToList();
 		}
 	}
 }

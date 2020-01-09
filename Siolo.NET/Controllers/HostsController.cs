@@ -87,9 +87,11 @@ namespace Siolo.NET.Controllers
 
 					await _manager.Logstash.SendEventAsync(new EventDrop(host, shortReport.md5, shortReport.full_class));
 
-					if (file != null && await NetworkUtility.IsRestricted(policies, shortReport.full_class.ToLower()))
+					var restrictingPolicy = await NetworkUtility.GetRestrictingPolicy(policies, shortReport.full_class.ToLower());
+
+					if (file != null && restrictingPolicy != "")
 					{
-						await _manager.RegisterIncident(file, host, shortReport);
+						await _manager.RegisterIncident(file, host, shortReport, restrictingPolicy);
 						return Ok(_response.SetStatus(true, "OK. Incident registered"));
 					}
 
@@ -139,6 +141,20 @@ namespace Siolo.NET.Controllers
 			{
 				return BadRequest(_response.SetStatus(false, $"NOK. {e.Message}"));
 			}
+		}
+
+		[Route("api/get_short_report")] [HttpPost]
+		public async Task<IActionResult> GetShortReport([FromForm] string hash)
+		{
+			return Ok(_response.SetStatus(true, await _manager.Mongo.GetReport(hash, true)));
+		}
+
+		[Route("api/find_inc")]
+		[HttpPost]
+		public async Task<IActionResult> FindIncident([FromForm] string id)
+		{
+			var hits = await _manager.Elastic.FindIncident(id);
+			return Ok(_response.SetStatus(true, JsonConvert.SerializeObject(hits)));
 		}
 	}
 }

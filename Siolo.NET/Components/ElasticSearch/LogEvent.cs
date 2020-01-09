@@ -7,30 +7,33 @@ namespace Siolo.NET.Components.ElasticSearch
 	public class LogEvent
 	{
 		[Text(Name = "logtime")]
-		public string LogTime { get; set; }
+		public string logtime { get; set; }
 
 		[Text(Name = "md5")]
-		public string Md5 { get; set; }
+		public string md5 { get; set; }
 
 		[Date(Name = "@timestamp")]
-		public string Timestamp { get; set; }
+		public string timestamp { get; set; }
 
 		[Text(Name = "logdate")]
-		public string LogDate { get; set; }
+		public string logdate { get; set; }
 
 		[Text(Name = "@version")]
-		public string Version { get; set; }
+		public string version { get; set; }
 
 		[Text(Name = "event_type")]
-		public string EventType { get; set; }
+		public string event_type { get; set; }
 
 		[Text(Name = "ip")]
-		public string Ip { get; set; }
+		public string ip { get; set; }
 
 		[Text(Name = "full_class")]
-		public string FullClass { get; set; }
+		public string full_class { get; set; }
 
 		[Object(Name = "PossibleRoutes")]
 		public List<List<string>> PossibleRoutes { get; set; }
+
+		[Object(Name = "RestrictingPolicy")]
+		public string RestrictingPolicy { get; set; }
 	}
 }
