@@ -37,6 +37,11 @@ namespace Siolo.NET.Components.Network
 
 		public static async Task<bool> IsRestricted(IAsyncEnumerable<string> extensions, string fullClass)
 		{
+			return await GetRestrictingPolicy(extensions, fullClass) != "";
+		}
+
+		public static async Task<string> GetRestrictingPolicy(IAsyncEnumerable<string> extensions, string fullClass)
+		{
 			var fullClassParts = fullClass.Split(':');
 
 			await foreach (var extension in extensions)
@@ -46,11 +51,11 @@ namespace Siolo.NET.Components.Network
 				if ((extensionParts[0] == fullClassParts[0] || extensionParts[0] == "*") &&
 					(extensionParts[1] == fullClassParts[1] || extensionParts[1] == "*"))
 				{
-					return true;
+					return extension;
 				}
 			}
 
-			return false;
+			return "";
 		}
 	}
 }

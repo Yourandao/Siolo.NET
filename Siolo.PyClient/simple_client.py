@@ -47,7 +47,7 @@ def cmdHelp():
     print('login <ip>           -   login ip to system and open session (it will register ip for first time)')
     print('forcelogout <ip>     -   force logut ip from system')
     print('logout <ip/all/cur>  -   logut ip from system')
-    print('report <what> <args> -   print details about smth (inc)')
+    print('report <what> <args> -   print details about smth (inc inc_id, file hash)')
     print()
     print('In session commands:')
     print('background           -   background current session')
@@ -131,6 +131,51 @@ def cmdLogout(ip: str):
             print(f'Session "{ip}" is not opened')
 
 
+def cmdReport(args: list):
+    if args[0] == 'file':
+        short_report = json.loads(sendToService({'hash': args[1]}, 'api/get_short_report', {}))
+        print('*' * 22 + ' File report ' + '*' * 22)
+        print('MD5:\t\t\t' + short_report['md5'])
+        print('File size:\t\t' + str(short_report['file_size']) + ' bytes')
+        print('Full class:\t\t' + short_report['full_class'])
+        print('Detection engine:\t' + short_report['detection_engine'])
+        print('Report created:\t\t' + short_report['report_date'] + ' ' + short_report['report_time'])
+        print('*' * 57)
+        return
+
+    if args[0] == 'inc':
+        inc = json.loads(sendToService({'id': args[1]}, 'api/find_inc', {}))
+        if len(inc) == 0:
+            print(f'Inc "{args[1]}" not found')
+            return
+
+        inc = inc[0]
+
+        head = '=' * 25 + ' Incident ' + args[1] + ' ' + '=' * 25
+        print(head)
+
+        # TODO: remove this fucking ternary expressions after debug logstash + this function and its API (but not for PossibleRoutes)
+        print('IP:\t\t\t' + (inc['ip'] if inc['ip'] is not None else 'Unknown'))
+        print('Incident register date:\t' + inc['logdate'])
+        print('Incident register time:\t' + inc['logtime'])
+        print('Triggered by policy:\t' + (inc['RestrictingPolicy'] if inc['RestrictingPolicy'] is not None else 'Unknown'))
+
+        cmdReport(['file', '3af1008ba9f6dddaf99907d9458ee775'])
+
+        print('First occurrence IP: ' + (inc['PossibleRoutes'][0][0] if len(inc['PossibleRoutes']) > 0 else 'Unknown'))
+
+        if len(inc['PossibleRoutes']) > 0:
+            print('Possible routes:')
+            for i, route in zip(range(len(inc['PossibleRoutes'])), inc['PossibleRoutes']):
+                print(str(i) + '.\t' + ' ->\n\t'.join(route))
+
+        print('=' * len(head))
+        
+        return
+
+
+    print(f'Cant show report for "{args[0]}"')
+
 def cmdBackground():
     global current_session
     current_session = ''
@@ -211,6 +256,13 @@ try:
                 print('logut <ip/all>')
             else:
                 cmdForceLogout(input_split[1])
+            continue
+
+        if cmd == 'report':
+            if len(input_split) != 3:
+                print('report <what> <args> (inc inc_id, file hash)')
+            else:
+                cmdReport(input_split[1::])
             continue
 
 

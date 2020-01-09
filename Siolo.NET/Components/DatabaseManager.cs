@@ -72,10 +72,10 @@ namespace Siolo.NET.Components
 			return true;
 		}
 
-		public async Task RegisterIncident(IFormFile file, string host, VTShortReport shortReport)
+		public async Task RegisterIncident(IFormFile file, string host, VTShortReport shortReport, string restrictingPolicy)
 		{
 			await RegisterIncidentAtMongoAsync(file, shortReport);
-			await RegisterIncidentAtElasticAsync(host, shortReport);
+			await RegisterIncidentAtElasticAsync(host, shortReport, restrictingPolicy);
 		}
 
 		private async Task RegisterIncidentAtMongoAsync(IFormFile file, VTShortReport shortReport)
@@ -86,9 +86,9 @@ namespace Siolo.NET.Components
 				JsonConvert.SerializeObject(shortReport, Formatting.Indented));
 		}
 
-		private async Task RegisterIncidentAtElasticAsync(string host, VTShortReport shortReport)
+		private async Task RegisterIncidentAtElasticAsync(string host, VTShortReport shortReport, string restrictingPolicy)
 		{
-			var incident = new EventIncident(host, shortReport.md5, shortReport.full_class);
+			var incident = new EventIncident(host, shortReport.md5, shortReport.full_class, restrictingPolicy);
 			var firstOccurrenceIp = await Elastic.FindFirstOccurrenceIpByFileHash(shortReport.md5);
 
 			var paths = await Neo4J.FindAllPaths(firstOccurrenceIp, host);
