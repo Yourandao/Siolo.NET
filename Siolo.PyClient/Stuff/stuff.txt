@@ -1,0 +1,10 @@
+admin wildcard troj:* restricted_trojan_objects
+admin attach 192.168.7.0/24 troj:*
+
+admin wildcard *:rast some_png_rastr_images
+admin attach 192.168.8.0/24 *:rast
+
+admin wildcard *:docu documents
+admin attach 192.168.9.0/24 *:docu
+
+admin attach 192.168.7.5/32 *:exec

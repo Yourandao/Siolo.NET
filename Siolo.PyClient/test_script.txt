@@ -1,2 +1,40 @@
-help
-show incs
+login 192.168.10.1/32
+login 192.168.10.2/32
+login 192.168.10.3/32
+login 192.168.9.1/32
+login 192.168.9.2/32
+login 192.168.9.3/32
+login 192.168.8.1/32
+login 192.168.8.2/32
+login 192.168.8.3/32
+login 192.168.7.1/32
+login 192.168.7.2/32
+login 192.168.7.5/32
+
+use 192.168.10.3/32
+drop .\Stuff\ayaz.png
+drop .\Stuff\82af9ce9081280ffcb603df3d5685201dd781762227908a9674076a0b8041467
+
+use 192.168.8.1/32
+drop .\Stuff\doc1.docx
+
+use 192.168.7.1/32
+drop .\Stuff\doc2.docx
+
+use 192.168.7.2/32
+drop .\Stuff\doc2.docx
+
+use 192.168.9.2/32
+drop .\Stuff\macho.jpg
+
+use 192.168.7.2/32
+drop .\Stuff\82af9ce9081280ffcb603df3d5685201dd781762227908a9674076a0b8041467
+
+use 192.168.7.5/32
+drop .\Stuff\notepad.exe
+
+use 192.168.9.2/32
+drop .\Stuff\doc1.docx
+
+use 192.168.8.1/32
+drop .\Stuff\ayaz.png

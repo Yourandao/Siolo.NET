@@ -358,6 +358,9 @@ if len(sys.argv) == 2:
 printHello()
 try:
     for command in file_commands:
+        if command == '':
+            continue
+        
         print((current_session + ' > ' + command).strip())
         processCommand(command)
         
