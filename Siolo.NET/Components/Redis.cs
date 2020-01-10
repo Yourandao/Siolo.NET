@@ -50,7 +50,14 @@ namespace Siolo.NET.Components
 
 		public async IAsyncEnumerable<string> GetHostWildcarts(string host)
 		{
-			string key = _server.Keys(pattern: $"{host}*").First();
+			var results = _server.Keys(pattern: $"{host}*").ToList();
+
+			if (results == null || !results.Any())
+			{
+				yield break;
+			}
+
+			string key = results.First();
 
 			foreach (var value in await _db.SetMembersAsync(key))
 			{

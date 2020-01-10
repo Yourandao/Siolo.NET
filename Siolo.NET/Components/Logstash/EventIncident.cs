@@ -1,5 +1,9 @@
-﻿using Newtonsoft.Json;
+﻿using System.Collections.Generic;
+
+using Newtonsoft.Json;
 using System.Linq;
+
+using Siolo.NET.Components.Neo4j;
 
 namespace Siolo.NET.Components.Logstash
 {
@@ -21,16 +25,9 @@ namespace Siolo.NET.Components.Logstash
             event_type = "incident";
         }
 
-        private void SetPossibleRoutes(PathArc[][] pathArray)
+        public void SetPossibleRoutes(List<List<Neo4jRelation>> pathArray)
         {
-            PossibleRoutes = (from path in pathArray
-                               select (new[] { path.First().@from })
-                                 .Concat(from arc in path select arc.to).ToArray()).ToArray();
-        }
-
-        public void SetPossibleRoutes(string pathArrayJson)
-        {
-            SetPossibleRoutes(JsonConvert.DeserializeObject<PathArc[][]>(pathArrayJson));
+            PossibleRoutes = pathArray.Select(path => path.Select(n => n.ip).ToArray()).ToArray();
         }
     }
 }

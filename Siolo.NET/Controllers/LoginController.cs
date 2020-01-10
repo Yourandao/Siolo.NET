@@ -29,8 +29,10 @@ namespace Siolo.NET.Controllers
 			{
 				if (!await _manager.PushNewHost(contract.ip))
 				{
-					return Unauthorized(_response.SetStatus(false, "Log In Error"));
+					return Unauthorized(_response.SetStatus(false, "Ok. Log In Error"));
 				}
+
+				await _manager.UpdateRedisStorage();
 
 				return Ok(_response.SetStatus(true, "OK"));
 			}

@@ -61,6 +61,14 @@ namespace Siolo.NET.Components
 
 			if (subnetIp != default)
 			{
+				//var parentSubnetPolicies = Redis.GetHostWildcarts(subnetIp);
+				//var enumer = parentSubnetPolicies.GetAsyncEnumerator();
+
+				//while (enumer.Current != null && await enumer.MoveNextAsync())
+				//{
+				//	await Postgres.AttachPolicy(ip, enumer.Current);
+				//}
+
 				var parentSubnetPolicies = Redis.GetHostWildcarts(subnetIp);
 
 				await foreach (var policy in parentSubnetPolicies)
@@ -100,7 +108,7 @@ namespace Siolo.NET.Components
 
 			var paths = await Neo4J.FindAllPaths(firstOccurrenceIp, host);
 
-			incident.SetPossibleRoutes(JsonConvert.SerializeObject(paths));
+			incident.SetPossibleRoutes(paths);
 			ExcludeRestrictedRoutes(incident, shortReport);
 
 			await Logstash.SendEventAsync(incident);
@@ -109,8 +117,9 @@ namespace Siolo.NET.Components
 		private void ExcludeRestrictedRoutes(EventIncident e, VTShortReport shortReport)
 		{
 			e.PossibleRoutes = (from route in e.PossibleRoutes
-									  where route.All(host =>
-											!NetworkUtility.IsRestricted(Redis.GetHostWildcarts(host), shortReport.full_class.ToLower()).Result)
+									  where route.Skip(1).Take(route.Length - 2).All(host =>
+														  NetworkUtility.IsSubnet(host) || 
+														  !NetworkUtility.IsRestricted(Redis.GetHostWildcarts(host), shortReport.full_class.ToLower()).Result)
 									  select route).ToArray();
 		}
 	}

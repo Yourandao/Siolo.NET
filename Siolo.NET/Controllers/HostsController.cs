@@ -32,14 +32,14 @@ namespace Siolo.NET.Controllers
 		{
 			try
 			{
-				if(!Regex.IsMatch(contract.Wildcart, @"^\w+:\w+$"))
+				if(!Regex.IsMatch(contract.Wildcart, @"^\w+|\*:\w+|\*$"))
 				{
 					return Ok(_response.SetStatus(true, "OK. Invalid wildcard format"));
 				}
 
 				bool registerResult = await _manager.Postgres.RegisterPolicy(contract.Info, contract.Wildcart);
 
-				return Ok(_response.SetStatus(true, $"OK. {(!registerResult ? "Already exists" : "Successfully registered")}"));
+				return Ok(_response.SetStatus(true, $"OK. {(registerResult ? "Already exists" : "Successfully registered")}"));
 			}
 			catch (Exception e)
 			{
@@ -52,7 +52,7 @@ namespace Siolo.NET.Controllers
 		{
 			try
 			{
-				if (!Regex.IsMatch(contract.Wildcart, @"^\w+:\w+$"))
+				if (!Regex.IsMatch(contract.Wildcart, @"^\w+|\*:\w+|\*$"))
 				{
 					return Ok(_response.SetStatus(true, "OK. Invalid wildcard format"));
 				}
@@ -126,7 +126,7 @@ namespace Siolo.NET.Controllers
 			}
 			catch (Exception e)
 			{
-				return BadRequest(_response.SetStatus(false, $"NOK. {e.Message}"));
+				return BadRequest(_response.SetStatus(false, $"NOK. {e.Message}, {e.StackTrace}"));
 			}
 		}
 

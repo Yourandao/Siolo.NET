@@ -7,6 +7,8 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
+using Newtonsoft.Json;
+
 namespace Siolo.NET.Components.Neo4j
 {
 	public class Neo4J : IDisposable
@@ -33,7 +35,7 @@ namespace Siolo.NET.Components.Neo4j
 			}
 		}
 
-		private async Task<T> ExecuteWithResult<T>(string query, string field)
+		private async Task<List<List<Neo4jRelation>>> ExecuteWithResult<T>(string query, string field)
 		{
 			var session = _driver.AsyncSession();
 
@@ -41,9 +43,15 @@ namespace Siolo.NET.Components.Neo4j
 			{
 				IResultCursor cursor = await session.RunAsync(query);
 
-				var result = await cursor.SingleAsync(record => record[field].As<T>());
+				var results = new List<List<Neo4jRelation>>();
 
-				return result;
+				while (await cursor.FetchAsync())
+				{
+					var node = JsonConvert.SerializeObject(cursor.Current[field].As<List<INode>>().Select(o => o.Properties));
+					results.Add(JsonConvert.DeserializeObject<List<Neo4jRelation>>(node));
+				}
+
+				return results;
 			}
 			finally
 			{
@@ -136,32 +144,14 @@ namespace Siolo.NET.Components.Neo4j
 			}
 		}
 
-		public async Task<IEnumerable<List<Neo4jRelation>>> FindAllPaths(string first, string second)
+		public async Task<List<List<Neo4jRelation>>> FindAllPaths(string first, string second)
 		{
 			var query =
-				$"match path = (a:Host {{ip : '{first}'}})-[:KNOWS*1..6]->(t:Host {{ip : '{second}'}}) unwind relationships(path) as rel return collect({{from : rel.from, to : rel.to }}) as PathData";
+				$"match r = (a:Host {{ip : '{first}'}})-[:KNOWS*1..6]->(t:Host {{ip : '{second}'}}) WHERE ALL(n in nodes(r) WHERE size([m in nodes(r) WHERE m=n]) = 1) return nodes(r) as r";
 
-			var result = await ExecuteWithResult<List<Dictionary<string, object>>>(query, "PathData");
+			var result = await ExecuteWithResult<object>(query, "r");
 
-			var paths = new List<List<Neo4jRelation>>();
-			var path = new List<Neo4jRelation>();
-
-			bool isFirst = true;
-
-			foreach (var way in result.Select(elem => elem.Select(o => o.Value.ToString()).ToList()))
-			{
-				if (way[0] == first && !isFirst)
-				{
-					paths.Add(path);
-					path.Clear();
-				}
-
-				isFirst = false;
-
-				path.Add(new Neo4jRelation(way[0], way[1]));
-			}
-
-			return paths.Take(5);
+			return result;
 		}
 
 		public async Task<List<string>> GetAllHosts()

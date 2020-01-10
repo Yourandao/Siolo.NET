@@ -49,6 +49,14 @@ namespace Siolo.NET.Controllers
 			return "OK";
 		}
 
+		[Route("test/neo4jtest")]
+		[HttpGet]
+		public async Task<IActionResult> Neo4j()
+		{
+			return Ok(await _manager.Neo4J.FindAllPaths("192.168.8.1/32", "192.168.9.2/32"));
+		}
+
+
 		[Route("test/el_test/")] [HttpPost]
 		public async Task<IActionResult> El_test()
 		{
