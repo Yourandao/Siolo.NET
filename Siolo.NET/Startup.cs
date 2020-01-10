@@ -14,13 +14,28 @@ namespace Siolo.NET
 			Configuration = configuration;
 		}
 
+		public Startup(IWebHostEnvironment env)
+		{
+			var builder = new ConfigurationBuilder()
+				.SetBasePath(env.ContentRootPath)
+				.AddJsonFile("appsetings.json", false, true)
+				.AddEnvironmentVariables();
+
+			if (env.IsDevelopment())
+			{
+				builder.AddUserSecrets<Startup>();
+			}
+
+			Configuration = builder.Build();
+		}
+
 		public IConfiguration Configuration { get; }
 
 		public void ConfigureServices(IServiceCollection services)
 		{
 			services.AddControllers();
 
-			services.AddSingleton<DatabaseManager>();
+			services.AddSingleton(new DatabaseManager(Configuration));
 		}
 
 		public void Configure(IApplicationBuilder app, IWebHostEnvironment env)

@@ -18,9 +18,9 @@ namespace Siolo.NET.Components
 
 		private readonly IGridFSBucket _gridfs;
 
-		public Mongo(string host, string port, string reportCollection, string shortReportCollection)
+		public Mongo(string host, string port, string login, string password, string reportCollection, string shortReportCollection)
 		{
-			string connection = $"mongodb://root:example@{host}:{port}";
+			string connection = $"mongodb://{login}:{password}@{host}:{port}";
 
 			_client = new MongoClient(connection);
 

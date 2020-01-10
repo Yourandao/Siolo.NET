@@ -2,6 +2,7 @@
 using System.Linq;
 
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 
 using Newtonsoft.Json;
 
@@ -16,8 +17,6 @@ namespace Siolo.NET.Components
 {
 	public class DatabaseManager
 	{
-		private const string Host = "104.248.28.149";
-
 		public Mongo Mongo { get; }
 
 		public Redis Redis { get; }
@@ -32,15 +31,23 @@ namespace Siolo.NET.Components
 
 		public Logstash.Logstash Logstash { get; }
 
-		public DatabaseManager()
+		public DatabaseManager(IConfiguration config)
 		{
-			Mongo = new Mongo(Host, "27017", "vt_reports", "short_vt_reports");
-			Redis = new Redis(Host, "6379");
-			Neo4J = new Neo4J(Host, "7687", "neo4j", "test");
-			Postgres = new Postgres(Host, "5432");
-			Elastic = new Elastic(Host, "9200");
+			string host = config["Host"];
+
+			Mongo = new Mongo(host, config["Mongo:Port"], config["Mongo:Login"], 
+									config["Mongo:Password"], "vt_reports", "short_vt_reports");
+
+			Redis = new Redis(host, config["Redis:Port"]);
+			Neo4J = new Neo4J(host, config["Neo4j:Port"], config["Neo4j:Login"], config["Neo4j:Password"]);
+
+			Postgres = new Postgres(host, config["Postgre:Port"], config["Postgre:Login"], 
+											config["Postgre:Password"], config["Postgre:Database"]);
+
+			Elastic = new Elastic(host, config["ElasticSearch:Port"]);
+
 			VirusTotal = new VirusTotal(@"Resources\.virustotal.api", @"Resources\sigs.json", Mongo);
-			Logstash = new Logstash.Logstash(Host, 5044);
+			Logstash = new Logstash.Logstash(host, int.Parse(config["Logstash:Port"]));
 		}
 
 		public async Task UpdateRedisStorage()

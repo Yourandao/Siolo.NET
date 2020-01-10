@@ -13,9 +13,9 @@ namespace Siolo.NET.Components.Postgre
 
 		private const string UuidNil = "00000000-0000-0000-0000000000";
 
-		public Postgres(string host, string port)
+		public Postgres(string host, string port, string login, string password, string db)
 		{
-			_connection = new NpgsqlConnection($"User ID=postgres;Password=qwerty;Server={host};Port={port};Database=siolo;Integrated Security=true;Pooling=true;");
+			_connection = new NpgsqlConnection($"User ID={login};Password={password};Server={host};Port={port};Database={db};Integrated Security=true;Pooling=true;");
 			_connection.Open();
 		}
 
