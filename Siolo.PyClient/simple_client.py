@@ -1,6 +1,7 @@
 import requests
 import base64
 import json
+import sys
 from os import path
 from brs_exc import BadResponseStateException
 
@@ -9,6 +10,10 @@ SERVICE_PORT = 52925
 
 current_session = ''
 opened_sessions = []
+
+script_name = sys.argv[0][sys.argv[0].rfind('\\') + 1::]
+
+file_commands = []
 
 def sendToService(data: dict, cmd_addr: str, files: dict = None):
     url = f'http://{SERVICE_IP}:{SERVICE_PORT}/{cmd_addr}/'
@@ -39,22 +44,34 @@ def printHello():
 
 
 def cmdHelp():
-    print('Available commands:')
-    print('help                 -   print help information')
-    print('show <what>          -   show smth (sessions, incs, active_hosts)')
-    print('forceuse <ip>        -   use not opened session in current client')
-    print('use <ip>             -   use opened session in current client')
-    print('login <ip>           -   login ip to system and open session (it will register ip for first time)')
-    print('forcelogout <ip>     -   force logut ip from system')
-    print('logout <ip/all/cur>  -   logut ip from system')
-    print('report <what> <args> -   print details about smth (inc inc_id, file hash)')
-    print()
-    print('In session commands:')
-    print('background           -   background current session')
-    print('drop <file_path>     -   trigger drop file event')
-    print()
-    print('exit                 -   disconnect all sessions and leave script')
-    print()
+    print(f"""\
+{script_name} commands_file.txt (optional)
+
+Available commands:
+help                 -   print help information
+show <what>          -   show smth (sessions, incs, active_hosts)
+forceuse <ip>        -   use not opened session in current client
+use <ip>             -   use opened session in current client
+login_sn <subnet_ip> -   login subnet to system (can be used for adding persisting hosts)
+login <ip>           -   login ip to system and open session (it will register ip for first time)
+forcelogout <ip>     -   force logut ip from system
+logout <ip/all/cur>  -   logut ip from system
+report <what> <args> -   print details about smth (inc inc_id, file hash)
+    
+In session commands:
+background           -   background current session
+drop <file_path>     -   trigger drop file event
+    
+Admin functions:
+admin <what> <args>
+<what>:
+    wildcard <wildcard> <info>  -   create new policy
+    attach  <ip> <wildcard>     -   attach wildcard to ip
+    link <ip_1> <ip_2>          -   make specific relation between hosts (for subnets)
+
+    
+exit                 -   disconnect all sessions and leave script\
+""")
 
 
 def cmdShow(what: str):
@@ -67,7 +84,7 @@ def cmdShow(what: str):
         hits = json.loads(sendToService({}, 'api/find_incs'))
 
         for i, data in [(x['Id'], x['Data']) for x in hits]:
-            print(f"{i} {data['LogDate']} {data['LogTime']}\t| File hash: {data['Md5']} | IP: {data['Ip']}")
+            print(f"{i} {data['logdate']} {data['logtime']}\t| File hash: {data['md5']} | IP: {data['ip']}")
 
         return
 
@@ -93,15 +110,18 @@ def cmdUse(ip: str):
     cmdForceUse(ip)
 
 
+def cmdLoginSn(ip: str):
+    print(sendToService({ 'ip' : ip }, 'api/login'))
+
+
 def cmdLogin(ip: str):
     if ip in opened_sessions:
         print('Session is already opened')
+        return
 
-    if ip not in opened_sessions:
-        opened_sessions.append(ip)
+    cmdLoginSn(ip)
+    opened_sessions.append(ip)
     cmdUse(ip)
-
-    print(sendToService({ 'ip' : ip }, 'api/login'))
 
 
 def cmdForceLogout(ip: str):
@@ -160,7 +180,9 @@ def cmdReport(args: list):
         print('Incident register time:\t' + inc['logtime'])
         print('Triggered by policy:\t' + (inc['RestrictingPolicy'] if inc['RestrictingPolicy'] is not None else 'Unknown'))
 
-        cmdReport(['file', '3af1008ba9f6dddaf99907d9458ee775'])
+        print()
+        cmdReport(['file', inc['md5']])
+        print()
 
         print('First occurrence IP: ' + (inc['PossibleRoutes'][0][0] if len(inc['PossibleRoutes']) > 0 else 'Unknown'))
 
@@ -175,6 +197,31 @@ def cmdReport(args: list):
 
 
     print(f'Cant show report for "{args[0]}"')
+
+
+def cmdAdmin(cmd:str, args: list):
+    if cmd == 'wildcard':
+        if len(args) != 2:
+            print('wildcard <wildcard> <info>  -   create new policy')
+        else:
+            print(sendToService({'Wildcart': args[0], 'Info': args[1]}, 'api/wildcart'))
+        return
+
+    if cmd == 'attach':
+        if len(args) != 2:
+            print('attach  <ip> <wildcard>     -   attach wildcard to ip')
+        else:
+            print(sendToService({'Ip': args[0], 'Wildcart': args[1]}, 'api/attach'))
+        return
+
+    if cmd == 'link':
+        if len(args) != 2:
+            print('link <ip_1> <ip_2>          -   make specific relation between hosts (for subnets)')
+        else:
+            print(sendToService({'First': args[0], 'Second': args[1]}, 'api/link'))
+        return
+
+    print(f'Unknown command "{cmd}"')
 
 def cmdBackground():
     global current_session
@@ -202,85 +249,120 @@ def cmdExit():
     cmdLogout('all')
 
 
-printHello()
-try:
-    while True:
-        print((current_session + ' >').strip(), end=' ')
+if len(sys.argv) > 2:
+    print(f'{script_name} commands_file.txt (optional)')
+    exit(0)
 
-        input_raw = input()
-        input_split = input_raw.split()
-        cmd = input_split[0].lower()
+
+def processCommand(command: str):
+    input_raw = command
+    input_split = input_raw.split()
+    cmd = input_split[0].lower()
 
 # Some default commands
-        if cmd == 'help':
-            cmdHelp()
-            continue
+    if cmd == 'help':
+        cmdHelp()
+        return
 
-        if cmd == 'show':
-            if len(input_split) != 2:
-                print('show <what>')
-            else:
-                cmdShow(input_split[1])
-            continue
+    if cmd == 'show':
+        if len(input_split) != 2:
+            print('show <what>')
+        else:
+            cmdShow(input_split[1])
+        return
 
-        if cmd == 'forceuse':
-            if len(input_split) != 2:
-                print('forceuse <ip>')
-            else:
-                cmdForceUse(input_split[1])
-            continue
+    if cmd == 'forceuse':
+        if len(input_split) != 2:
+            print('forceuse <ip>')
+        else:
+            cmdForceUse(input_split[1])
+        return
 
-        if cmd == 'use':
-            if len(input_split) != 2:
-                print('use <ip>')
-            else:
-                cmdUse(input_split[1])
-            continue
+    if cmd == 'use':
+        if len(input_split) != 2:
+            print('use <ip>')
+        else:
+            cmdUse(input_split[1])
+        return
 
-        if cmd == 'login':
-            if len(input_split) != 2:
-                print('login <ip>')
-            else:
-                cmdLogin(input_split[1])
-            continue
+    if cmd == 'login_sn':
+        if len(input_split) != 2:
+            print('login_sn <ip>')
+        else:
+            cmdLoginSn(input_split[1])
+        return
 
-        if cmd == 'logout':
-            if len(input_split) != 2:
-                print('logout <ip/all>')
-            else:
-                cmdLogout(input_split[1])
-            continue
+    if cmd == 'login':
+        if len(input_split) != 2:
+            print('login <ip>')
+        else:
+            cmdLogin(input_split[1])
+        return
 
-        if cmd == 'forcelogout':
-            if len(input_split) != 2:
-                print('logut <ip/all>')
-            else:
-                cmdForceLogout(input_split[1])
-            continue
+    if cmd == 'logout':
+        if len(input_split) != 2:
+            print('logout <ip/all>')
+        else:
+            cmdLogout(input_split[1])
+        return
 
-        if cmd == 'report':
-            if len(input_split) != 3:
-                print('report <what> <args> (inc inc_id, file hash)')
-            else:
-                cmdReport(input_split[1::])
-            continue
+    if cmd == 'forcelogout':
+        if len(input_split) != 2:
+            print('logut <ip/all>')
+        else:
+            cmdForceLogout(input_split[1])
+        return
+
+    if cmd == 'report':
+        if len(input_split) != 3:
+            print('report <what> <args> (inc inc_id, file hash)')
+        else:
+            cmdReport(input_split[1::])
+        return
+
+    if cmd == 'admin':
+        if len(input_split) < 3:
+            print('admin <what> <args>')
+        else:
+            cmdAdmin(input_split[1], input_split[2::])
+        return
 
 
-        if cmd in ('exit', 'q', 'quit'):
-            raise KeyboardInterrupt
+    if cmd in ('exit', 'q', 'quit'):
+        raise KeyboardInterrupt
 
 # In session commands
-        if cmd in ('bg', 'background'):
-            cmdBackground()
-            continue
+    if cmd in ('bg', 'background'):
+        cmdBackground()
+        return
 
-        if cmd == 'drop':
-            if len(input_split) < 2:
-                print('drop <file_path>')
-            else:
-                cmdDrop(' '.join(input_split[1::]))
-            continue
+    if cmd == 'drop':
+        if len(input_split) < 2:
+            print('drop <file_path>')
+        else:
+            cmdDrop(' '.join(input_split[1::]))
+        return
 
-        print('Unknown command')
+    print('Unknown command')
+
+
+# Load commands from file if 
+if len(sys.argv) == 2:
+    try:
+        with open(sys.argv[1], 'r') as f:
+            file_commands = [x.strip() for x in f.readlines()]
+    except:
+        pass
+
+
+printHello()
+try:
+    for command in file_commands:
+        print((current_session + ' > ' + command).strip())
+        processCommand(command)
+        
+    while True:
+        print((current_session + ' >').strip(), end=' ')
+        processCommand(input())
 except KeyboardInterrupt:
     cmdExit()

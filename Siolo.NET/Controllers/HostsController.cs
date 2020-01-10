@@ -8,6 +8,7 @@ using Siolo.NET.Components.Network;
 using Siolo.NET.Models;
 using System;
 using System.IO;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 // ReSharper disable All
 
@@ -31,6 +32,11 @@ namespace Siolo.NET.Controllers
 		{
 			try
 			{
+				if(!Regex.IsMatch(contract.Wildcart, @"^\w+:\w+$"))
+				{
+					return Ok(_response.SetStatus(true, "OK. Invalid wildcard format"));
+				}
+
 				bool registerResult = await _manager.Postgres.RegisterPolicy(contract.Info, contract.Wildcart);
 
 				return Ok(_response.SetStatus(true, $"OK. {(!registerResult ? "Already exists" : "Successfully registered")}"));
@@ -46,6 +52,16 @@ namespace Siolo.NET.Controllers
 		{
 			try
 			{
+				if (!Regex.IsMatch(contract.Wildcart, @"^\w+:\w+$"))
+				{
+					return Ok(_response.SetStatus(true, "OK. Invalid wildcard format"));
+				}
+
+				if (!Regex.IsMatch(contract.Ip, @"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\/\d{1,2}$"))
+				{
+					return Ok(_response.SetStatus(true, "OK. Invalid ip format"));
+				}
+
 				await _manager.Postgres.AttachPolicy(contract.Ip, contract.Wildcart);
 				await _manager.Redis.PushHostData(await _manager.Postgres.GetEntities());
 
@@ -62,6 +78,16 @@ namespace Siolo.NET.Controllers
 		{
 			try
 			{
+				if (!Regex.IsMatch(contract.First, @"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\/\d{1,2}$"))
+				{
+					return Ok(_response.SetStatus(true, $"OK. Invalid ip format in \"{contract.First}\""));
+				}
+
+				if (!Regex.IsMatch(contract.Second, @"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\/\d{1,2}$"))
+				{
+					return Ok(_response.SetStatus(true, $"OK. Invalid ip format in \"{contract.Second}\""));
+				}
+
 				await _manager.Neo4J.CreateRelation(new Neo4jHostObject(contract.First, true),
 														new Neo4jHostObject(contract.Second, true));
 
