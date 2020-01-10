@@ -55,5 +55,11 @@ namespace Siolo.NET.Controllers
 			//return await _manager.Elastic.FindFirstIncidentByFileHash("3af1008ba9f6dddaf99907d9458ee775");
 			return Ok(await _manager.Elastic.FindAllIncidents());
 		}
+
+		[Route("text/mongotest")] [HttpPost]
+		public async Task MongoTest([FromBody] string hash)
+		{
+			await _manager.Mongo.InsertShortReport(hash, "");
+		}
 	}
 }

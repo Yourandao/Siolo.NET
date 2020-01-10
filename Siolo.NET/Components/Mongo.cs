@@ -32,32 +32,45 @@ namespace Siolo.NET.Components
 			_gridfs = new GridFSBucket(_db);
 		}
 
+		private async Task<bool> HasDocumentByHash(string hash, bool isShort = false)
+		{
+			string data = await GetReport(hash, isShort);
+
+			return data != string.Empty;
+		}
+
 		public async Task InsertReport(string hash, string data)
 		{
-			var bson = new Dictionary<string, string>() {
-				{ "hash" , hash },
-				{ "data" , data }
-			}.ToBsonDocument();
+			if (!await HasDocumentByHash(hash))
+			{
+				var bson = new Dictionary<string, string>() {
+					{ "hash" , hash },
+					{ "data" , data }
+				}.ToBsonDocument();
 
-			await _reportCollection.InsertOneAsync(bson);
+				await _reportCollection.InsertOneAsync(bson);
+			}
 		}
 
 		public async Task InsertShortReport(string hash, string data)
 		{
-			var bson = new Dictionary<string, string>()
+			if (!await HasDocumentByHash(hash, true))
 			{
-				{ "hash", hash },
-				{ "data", data }
-			}.ToBsonDocument();
+				var bson = new Dictionary<string, string>()
+				{
+					{ "hash", hash },
+					{ "data", data }
+				}.ToBsonDocument();
 
-			await _shortReportCollection.InsertOneAsync(bson);
+				await _shortReportCollection.InsertOneAsync(bson);
+			}
 		}
 
 		public async Task<string> GetReport(string hash, bool isShort = false)
 		{
 			var result = !isShort
-				         ? await _reportCollection.FindAsync(new BsonDocument("hash", hash))
-				         : await _shortReportCollection.FindAsync(new BsonDocument("hash", hash));
+						 ? await _reportCollection.FindAsync(new BsonDocument("hash", hash))
+						 : await _shortReportCollection.FindAsync(new BsonDocument("hash", hash));
 
 			var singleOrDefault = result.SingleOrDefault();
 			var data = singleOrDefault?["data"];
