@@ -55,7 +55,7 @@ use <ip>             -   use opened session in current client
 login_sn <subnet_ip> -   login subnet to system (can be used for adding persisting hosts)
 login <ip>           -   login ip to system and open session (it will register ip for first time)
 forcelogout <ip>     -   force logut ip from system
-logout <ip/all/cur>  -   logut ip from system
+logout <ip/all/cur>  -   logout ip from system
 report <what> <args> -   print details about smth (inc inc_id, file hash)
     
 In session commands:

@@ -9,7 +9,6 @@ using Newtonsoft.Json;
 using Siolo.NET.Components.ElasticSearch;
 using Siolo.NET.Components.Logstash;
 using Siolo.NET.Components.Neo4j;
-using Siolo.NET.Components.Postgre;
 using Siolo.NET.Components.VT;
 using Siolo.NET.Components.Network;
 
@@ -21,7 +20,7 @@ namespace Siolo.NET.Components
 
 		public Redis Redis { get; }
 
-		public Neo4J Neo4J { get; }
+		public Neo4JExperimental Neo4J { get; }
 
 		public Postgres Postgres { get; }
 
@@ -39,7 +38,8 @@ namespace Siolo.NET.Components
 									config["Mongo:Password"], "vt_reports", "short_vt_reports");
 
 			Redis = new Redis(host, config["Redis:Port"]);
-			Neo4J = new Neo4J(host, config["Neo4j:Port"], config["Neo4j:Login"], config["Neo4j:Password"]);
+			//Neo4J = new Neo4J(host, config["Neo4j:Port"], config["Neo4j:Login"], config["Neo4j:Password"]);
+			Neo4J = new Neo4JExperimental(host, config["Neo4j:Port"], config["Neo4j:Login"], config["Neo4j:Password"]);
 
 			Postgres = new Postgres(host, config["Postgre:Port"], config["Postgre:Login"], 
 											config["Postgre:Password"], config["Postgre:Database"]);
@@ -61,17 +61,9 @@ namespace Siolo.NET.Components
 
 			if (subnetIp != default)
 			{
-				//var parentSubnetPolicies = Redis.GetHostWildcarts(subnetIp);
-				//var enumer = parentSubnetPolicies.GetAsyncEnumerator();
+				var parentSubnetPolicies = Redis.GetHostWildcards(subnetIp);
 
-				//while (enumer.Current != null && await enumer.MoveNextAsync())
-				//{
-				//	await Postgres.AttachPolicy(ip, enumer.Current);
-				//}
-
-				var parentSubnetPolicies = Redis.GetHostWildcarts(subnetIp);
-
-				await foreach (var policy in parentSubnetPolicies)
+				await foreach (string policy in parentSubnetPolicies)
 				{
 					await Postgres.AttachPolicy(ip, policy);
 				}
@@ -109,18 +101,9 @@ namespace Siolo.NET.Components
 			var paths = await Neo4J.FindAllPaths(firstOccurrenceIp, host);
 
 			incident.SetPossibleRoutes(paths);
-			ExcludeRestrictedRoutes(incident, shortReport);
+			incident.ExcludeRestrictedRoutes(shortReport, Redis);
 
 			await Logstash.SendEventAsync(incident);
-		}
-
-		private void ExcludeRestrictedRoutes(EventIncident e, VTShortReport shortReport)
-		{
-			e.PossibleRoutes = (from route in e.PossibleRoutes
-									  where route.Skip(1).Take(route.Length - 2).All(host =>
-														  NetworkUtility.IsSubnet(host) || 
-														  !NetworkUtility.IsRestricted(Redis.GetHostWildcarts(host), shortReport.full_class.ToLower()).Result)
-									  select route).ToArray();
 		}
 	}
 }

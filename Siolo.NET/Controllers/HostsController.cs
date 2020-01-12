@@ -1,11 +1,14 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+
 using Newtonsoft.Json;
+
 using Siolo.NET.Components;
 using Siolo.NET.Components.Logstash;
 using Siolo.NET.Components.Neo4j;
 using Siolo.NET.Components.Network;
 using Siolo.NET.Models;
+
 using System;
 using System.IO;
 using System.Text.RegularExpressions;
@@ -27,19 +30,19 @@ namespace Siolo.NET.Controllers
 			_response = new Response();
 		}
 
-		[Route("api/wildcart")] [HttpPost]
+		[Route("api/wildcart"), HttpPost]
 		public async Task<IActionResult> AddWildcart([FromBody] PolicyContract contract)
 		{
 			try
 			{
-				if(!Regex.IsMatch(contract.Wildcart, @"^\w+|\*:\w+|\*$"))
+				if (!Regex.IsMatch(contract.Wildcart, @"^\w+|\*:\w+|\*$"))
 				{
 					return Ok(_response.SetStatus(true, "OK. Invalid wildcard format"));
 				}
 
 				bool registerResult = await _manager.Postgres.RegisterPolicy(contract.Info, contract.Wildcart);
 
-				return Ok(_response.SetStatus(true, $"OK. {(registerResult ? "Already exists" : "Successfully registered")}"));
+				return Ok(_response.SetStatus(true, $"OK. {(registerResult ? "Successfully registered" : "Already exists")}"));
 			}
 			catch (Exception e)
 			{
@@ -47,7 +50,7 @@ namespace Siolo.NET.Controllers
 			}
 		}
 
-		[Route("api/attach")] [HttpPost]
+		[Route("api/attach"), HttpPost]
 		public async Task<IActionResult> Attach([FromBody] AttachContract contract)
 		{
 			try
@@ -73,7 +76,7 @@ namespace Siolo.NET.Controllers
 			}
 		}
 
-		[Route("api/link")] [HttpPost]
+		[Route("api/link"), HttpPost]
 		public async Task<IActionResult> LinkSubnets([FromBody] RelationContract contract)
 		{
 			try
@@ -88,8 +91,8 @@ namespace Siolo.NET.Controllers
 					return Ok(_response.SetStatus(true, $"OK. Invalid ip format in \"{contract.Second}\""));
 				}
 
-				await _manager.Neo4J.CreateRelation(new Neo4jHostObject(contract.First, true),
-														new Neo4jHostObject(contract.Second, true));
+				await _manager.Neo4J.CreateRelation(new NodeEntity(contract.First, true),
+														new NodeEntity(contract.Second, true));
 
 				return Ok(_response.SetStatus(true, "OK"));
 			}
@@ -99,7 +102,7 @@ namespace Siolo.NET.Controllers
 			}
 		}
 
-		[Route("api/upload")] [HttpPost]
+		[Route("api/upload"), HttpPost]
 		public async Task<IActionResult> UploadFile([FromForm] IFormFile file, [FromForm] string host)
 		{
 			try
@@ -108,7 +111,7 @@ namespace Siolo.NET.Controllers
 				{
 					file.OpenReadStream().CopyTo(memoryStream);
 
-					var policies = _manager.Redis.GetHostWildcarts(host);
+					var policies = _manager.Redis.GetHostWildcards(host);
 					var shortReport = await _manager.VirusTotal.GetShortReportFromFileBytesAsync(memoryStream.ToArray());
 
 					await _manager.Logstash.SendEventAsync(new EventDrop(host, shortReport.md5, shortReport.full_class));
@@ -121,7 +124,7 @@ namespace Siolo.NET.Controllers
 						return Ok(_response.SetStatus(true, "OK. Incident registered"));
 					}
 
-					return Ok(_response.SetStatus(true, "OK"));
+					return Ok(_response.SetStatus(true, "OK."));
 				}
 			}
 			catch (Exception e)
@@ -130,7 +133,7 @@ namespace Siolo.NET.Controllers
 			}
 		}
 
-		[Route("api/find_paths")] [HttpPost]
+		[Route("api/find_paths"), HttpPost]
 		public async Task<IActionResult> FindPaths([FromBody] RelationContract relation)
 		{
 			try
@@ -143,7 +146,7 @@ namespace Siolo.NET.Controllers
 			}
 		}
 
-		[Route("api/get_active_hosts")] [HttpPost]
+		[Route("api/get_active_hosts"), HttpPost]
 		public async Task<IActionResult> GetActiveHosts()
 		{
 			try
@@ -156,7 +159,7 @@ namespace Siolo.NET.Controllers
 			}
 		}
 
-		[Route("api/find_incs")] [HttpPost]
+		[Route("api/find_incs"), HttpPost]
 		public async Task<IActionResult> FindAllIncidents()
 		{
 			try
@@ -169,18 +172,32 @@ namespace Siolo.NET.Controllers
 			}
 		}
 
-		[Route("api/get_short_report")] [HttpPost]
+		[Route("api/get_short_report"), HttpPost]
 		public async Task<IActionResult> GetShortReport([FromForm] string hash)
 		{
-			return Ok(_response.SetStatus(true, await _manager.Mongo.GetReport(hash, true)));
+			try
+			{
+				return Ok(_response.SetStatus(true, await _manager.Mongo.GetReport(hash, true)));
+			}
+			catch (Exception e)
+			{
+				return BadRequest(_response.SetStatus(false, $"NOK. {e.Message}"));
+			}
 		}
 
-		[Route("api/find_inc")]
-		[HttpPost]
+		[Route("api/find_inc"), HttpPost]
 		public async Task<IActionResult> FindIncident([FromForm] string id)
 		{
-			var hits = await _manager.Elastic.FindIncident(id);
-			return Ok(_response.SetStatus(true, JsonConvert.SerializeObject(hits)));
+			try
+			{
+				var hits = await _manager.Elastic.FindIncident(id);
+
+				return Ok(_response.SetStatus(true, JsonConvert.SerializeObject(hits)));
+			}
+			catch (Exception e)
+			{
+				return BadRequest(_response.SetStatus(false, $"NOK. {e.Message}"));
+			}
 		}
 	}
 }

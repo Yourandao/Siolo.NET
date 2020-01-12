@@ -4,14 +4,14 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
-using Newtonsoft.Json;
-
 using Siolo.NET.Components;
 
 namespace Siolo.NET
 {
 	public class Startup
 	{
+		public IConfiguration Configuration { get; }
+
 		public Startup(IConfiguration configuration)
 		{
 			Configuration = configuration;
@@ -32,11 +32,9 @@ namespace Siolo.NET
 			Configuration = builder.Build();
 		}
 
-		public IConfiguration Configuration { get; }
-
 		public void ConfigureServices(IServiceCollection services)
 		{
-			services.AddControllers();
+			services.AddControllers().AddNewtonsoftJson();
 
 			services.AddSingleton(new DatabaseManager(Configuration));
 		}

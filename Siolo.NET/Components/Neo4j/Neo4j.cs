@@ -11,14 +11,13 @@ using Newtonsoft.Json;
 
 namespace Siolo.NET.Components.Neo4j
 {
+	[Obsolete("Obsolete. Use Siolo.NET.Components.Neo4JExperimental instead.")]
 	public class Neo4J : IDisposable
 	{
 		private readonly IDriver _driver;
 
-		public Neo4J(string host, string port, string login, string password)
-		{
+		public Neo4J(string host, string port, string login, string password) => 
 			_driver = GraphDatabase.Driver($"bolt://{host}:{port}", AuthTokens.Basic(login, password));
-		}
 
 		private async Task Execute(string query)
 		{
@@ -35,7 +34,7 @@ namespace Siolo.NET.Components.Neo4j
 			}
 		}
 
-		private async Task<List<List<Neo4jRelation>>> ExecuteWithResult<T>(string query, string field)
+		private async Task<List<List<NodeEntity>>> ExecuteWithResult(string query, string field)
 		{
 			var session = _driver.AsyncSession();
 
@@ -43,12 +42,12 @@ namespace Siolo.NET.Components.Neo4j
 			{
 				IResultCursor cursor = await session.RunAsync(query);
 
-				var results = new List<List<Neo4jRelation>>();
+				var results = new List<List<NodeEntity>>();
 
 				while (await cursor.FetchAsync())
 				{
 					var node = JsonConvert.SerializeObject(cursor.Current[field].As<List<INode>>().Select(o => o.Properties));
-					results.Add(JsonConvert.DeserializeObject<List<Neo4jRelation>>(node));
+					results.Add(JsonConvert.DeserializeObject<List<NodeEntity>>(node));
 				}
 
 				return results;
@@ -84,16 +83,16 @@ namespace Siolo.NET.Components.Neo4j
 			await Execute(query);
 		}
 
-		public async Task DeleteHost(Neo4jHostObject host)
+		public async Task DeleteHost(NodeEntity host)
 		{
-			var query = $@"match (a:Host {{ip : '{ host.Ip }'}}) detach delete a";
+			var query = $@"match (a:Host {{ip : '{ host.ip }'}}) detach delete a";
 
 			await Execute(query);
 		}
 
-		public async Task PushHost(Neo4jHostObject host)
+		public async Task PushHost(NodeEntity host)
 		{
-			var query = $@"create (a:Host {{ ip : '{ host.Ip }', subnet : '{ host.IsSubnet }'}})";
+			var query = $@"create (a:Host {{ ip : '{ host.ip }', subnet : '{ host.IsSubnet() }'}})";
 
 			await Execute(query);
 		}
@@ -110,8 +109,8 @@ namespace Siolo.NET.Components.Neo4j
 
 				var subnetIp = new Regex(@"\d+\/\d{2}").Replace(ip, "0");
 
-				await CreateRelation(new Neo4jHostObject(subnetIp, true),
-											new Neo4jHostObject(ip, false));
+				await CreateRelation(new NodeEntity(subnetIp, true), 
+											new NodeEntity(ip, false));
 
 				return subnetIp;
 			}
@@ -133,23 +132,23 @@ namespace Siolo.NET.Components.Neo4j
 		   return collect(distinct r)
 		 */
 
-		public async Task CreateRelation(Neo4jHostObject host1, Neo4jHostObject host2)
+		public async Task CreateRelation(NodeEntity host1, NodeEntity host2)
 		{
-			if (host1.IsSubnet || host2.IsSubnet)
+			if (host1.IsSubnet() || host2.IsSubnet())
 			{
 				var query =
-					@$"match (a:Host), (b:Host) where a.ip contains '{host1.Ip}' and b.ip contains '{host2.Ip}' create (a)-[:KNOWS {{from: a.ip, to: b.ip}}]->(b), (b)-[:KNOWS{{from: b.ip, to: a.ip}}]->(a)";
+					@$"match (a:Host), (b:Host) where a.ip contains '{host1.ip}' and b.ip contains '{host2.ip}' create (a)-[:KNOWS {{from: a.ip, to: b.ip}}]->(b), (b)-[:KNOWS{{from: b.ip, to: a.ip}}]->(a)";
 
 				await Execute(query);
 			}
 		}
 
-		public async Task<List<List<Neo4jRelation>>> FindAllPaths(string first, string second)
+		public async Task<List<List<NodeEntity>>> FindAllPaths(string first, string second)
 		{
 			var query =
 				$"match r = (a:Host {{ip : '{first}'}})-[:KNOWS*1..6]->(t:Host {{ip : '{second}'}}) WHERE ALL(n in nodes(r) WHERE size([m in nodes(r) WHERE m=n]) = 1) return nodes(r) as r";
 
-			var result = await ExecuteWithResult<object>(query, "r");
+			var result = await ExecuteWithResult(query, "r");
 
 			return result;
 		}

@@ -1,0 +1,1 @@
+docker start neo4j mongo_express mongo redis pgadmin postgres elk

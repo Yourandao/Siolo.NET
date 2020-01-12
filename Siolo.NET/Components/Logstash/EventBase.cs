@@ -2,7 +2,7 @@
 {
     public class EventBase
     {
-        public string ip { get; set; }
-        public string event_type { get; set; }
+        public string Ip { get; set; }
+        public string EventType { get; set; }
     }
 }

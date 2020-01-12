@@ -48,7 +48,7 @@ namespace Siolo.NET.Components.VT
             if (!bPublicApi)
                 return;
 
-            TimeSpan delta = DateTime.Now - dtLastPublicCall;
+            var delta = DateTime.Now - dtLastPublicCall;
             dtLastPublicCall = DateTime.Now;
 
             if (delta.TotalSeconds > iPublicSleep)
@@ -65,7 +65,7 @@ namespace Siolo.NET.Components.VT
 
             try
             {
-                string[] keys = File.ReadAllLines(sApiKeysFile);
+                var keys = File.ReadAllLines(sApiKeysFile);
 
                 File.WriteAllLines(sApiKeysFile, keys.Skip(1).Concat(keys.Take(1)));
 
@@ -73,7 +73,7 @@ namespace Siolo.NET.Components.VT
             }
             catch (Exception exc)
             {
-                Console.WriteLine($"[Error] <VirusTotal::GetCurrentKey: {exc.Message}");
+                Console.WriteLine($@"[Error] <VirusTotal::GetCurrentKey: {exc.Message}");
                 return "";
             }
         }
@@ -106,7 +106,7 @@ namespace Siolo.NET.Components.VT
             }
             catch (Exception exc)
             {
-                Console.WriteLine($"[Error] <VirusTotal::GetVtFileInfoAsync: {exc.Message}");
+                Console.WriteLine($@"[Error] <VirusTotal::GetVtFileInfoAsync: {exc.Message}");
                 return "";
             }
         }
@@ -131,13 +131,13 @@ namespace Siolo.NET.Components.VT
 
                 string long_verdict = kasp_obj.result;
                 int colon_idx = long_verdict.IndexOf(':') + 1;
-                string short_verdict = long_verdict.Substring(colon_idx, long_verdict.IndexOf('.') - colon_idx);
+                string short_verdict = long_verdict[colon_idx..long_verdict.IndexOf('.')];
 
                 return short_verdict.Substring(0, 4).ToUpper();
             }
             catch (Exception exc)
             {
-                Console.WriteLine($"[Error] <VirusTotal::GetKasperskyShortVerdictAsync: {exc.Message}");
+                Console.WriteLine($@"[Error] <VirusTotal::GetKasperskyShortVerdictAsync: {exc.Message}");
                 return "UNKN";
             }
         }
@@ -165,8 +165,9 @@ namespace Siolo.NET.Components.VT
                     {
                         int offset = elem.offset * 2 + elem.offset;
 
-                        string cur_sig = string.Join(" ", (from b in file_bytes.Skip(elem.offset).Take((sig.Length + 1) / 3)
-                                                           select b.ToString("X2")).ToArray());
+                        string cur_sig = string.Join(
+	                        " ", (from b in file_bytes.Skip(elem.offset).Take((sig.Length + 1) / 3)
+	                              select b.ToString("X2")).ToArray());
 
                         if (sig.Equals(cur_sig))
                         {
@@ -179,20 +180,16 @@ namespace Siolo.NET.Components.VT
             }
             catch (Exception exc)
             {
-                Console.WriteLine($"[Error] <VirusTotal::GetFileTypeFromBytes: {exc.Message}");
+                Console.WriteLine($@"[Error] <VirusTotal::GetFileTypeFromBytes: {exc.Message}");
                 return "UNKN";
             }
         }
 
-        public async Task<string> GetFullFileClassFromBytesAsync(byte[] file_bytes)
-        {
-            return $"{await GetKasperskyShortVerdictFromBytesAsync(file_bytes)}:{GetFileTypeFromBytes(file_bytes)}";
-        }
+        public async Task<string> GetFullFileClassFromBytesAsync(byte[] file_bytes) 
+	        => $"{await GetKasperskyShortVerdictFromBytesAsync(file_bytes)}:{GetFileTypeFromBytes(file_bytes)}";
 
-        public async Task<string> GetFullFileClassAsync(string file_path)
-        {
-            return await GetFullFileClassFromBytesAsync(File.ReadAllBytes(file_path));
-        }
+        public async Task<string> GetFullFileClassAsync(string file_path) 
+	        => await GetFullFileClassFromBytesAsync(File.ReadAllBytes(file_path));
 
         public async Task<VTShortReport> GetShortReportFromFileBytesAsync(byte[] file_bytes)
         {

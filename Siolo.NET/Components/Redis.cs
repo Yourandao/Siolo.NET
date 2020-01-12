@@ -27,10 +27,8 @@ namespace Siolo.NET.Components
 			await _db.ExecuteAsync("flushall");
 		}
 
-		public async Task<bool> PushNew(string host, string value)
-		{
-			return await _db.SetAddAsync(host, value);
-		}
+		public async Task<bool> PushNew(string host, string value) => 
+			await _db.SetAddAsync(host, value);
 
 		public async Task<bool> Exists(string hostValue)
 		{
@@ -41,18 +39,18 @@ namespace Siolo.NET.Components
 		{
 			foreach (var (host, value) in data)
 			{
-				foreach (var wildcart in value)
+				foreach (var wildcard in value)
 				{
-					await this.PushNew(host, wildcart);
+					await this.PushNew(host, wildcard);
 				}
 			}
 		}
 
-		public async IAsyncEnumerable<string> GetHostWildcarts(string host)
+		public async IAsyncEnumerable<string> GetHostWildcards(string host)
 		{
 			var results = _server.Keys(pattern: $"{host}*").ToList();
 
-			if (results == null || !results.Any())
+			if (!results.Any())
 			{
 				yield break;
 			}

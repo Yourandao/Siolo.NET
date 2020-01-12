@@ -25,7 +25,7 @@ namespace Siolo.NET.Components.Logstash
 		            string message = JsonConvert.SerializeObject(e);
 	                var data = System.Text.Encoding.ASCII.GetBytes(message);
 
-	                NetworkStream stream = client.GetStream();
+	                var stream = client.GetStream();
 	                await stream.WriteAsync(data, 0, data.Length);
 
 	                stream.Close();

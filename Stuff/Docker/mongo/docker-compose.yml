@@ -1,0 +1,31 @@
+version: '3.5'
+
+services:
+
+  mongo:
+    image: mongo
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: <LOGIN>
+      MONGO_INITDB_ROOT_PASSWORD: <PASSWORD>
+    container_name: mongo
+    ports:
+      - 27017:27017
+    networks:
+      - mongo_net
+
+  mongo-express:
+    image: mongo-express
+    restart: always
+    ports:
+      - 8081:8081
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: <LOGIN>
+      ME_CONFIG_MONGODB_ADMINPASSWORD: <PASSWORD>
+    container_name: mongo_express
+    networks:
+      - mongo_net
+
+networks:
+  mongo_net:
+    driver: bridge
